@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <style>
+        .buttons {
+            margin: 0 10px 10px 10px;
+        }
+
+        .error {
+            border-color: var(--button-error);
+            background-color: var(--button-error);
+            color: var(--text-button);
+        }
+    </style>
+
+    <script>
+        const getBtn = n => zxBase.get('btn' + n);
+
+        zxBase.setCaption = (n, t, i) => getBtn(n).setCaption(t, i);
+        zxBase.setHandler = (n, f) => getBtn(n).setHandler(() => f(n));
+        zxBase.setError = n => getBtn(n).getHTML().classList.add('error');
+        zxBase.clearError = n => getBtn(n).getHTML().classList.remove('error');
+    </script>
+</head>
+
+<body>
+    <div class="buttons">
+        <z type="button" class="block-button" id="btn0">title 1</z>
+        <z type="button" class="block-button" id="btn1">title 2</z>
+        <z type="button" class="block-button" id="btn2">title 3</z>
+        <z type="button" class="block-button" id="btn3">title 4</z>
+    </div>
+</body>
+
+</html>

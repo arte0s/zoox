@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" type="text/css" href="./css/font-awesome.css">
+    <link rel="stylesheet" type="text/css" href="./css/app.css">
+
+    <style>
+        .navbar {
+            background-color: #8EC6B6;
+        }
+
+        button {
+            background-color: #588C7E;
+            border-color: #588C7E;
+        }
+    </style>
+
+    <script src="./js/zoox.js"></script>
+
+    <script>
+        zoox.init({
+            path: 'zoox',
+            init: base => {
+
+                base.get().setText('words-complete', {
+                    ru: 'Слов выучено',
+                    en: 'Learned words'
+                });
+
+                base.get().setText('words-process', {
+                    ru: 'На изучении',
+                    en: 'Learning words'
+                });
+
+                base.setText('words', {
+                    ru: 'слов',
+                    en: 'word'
+                });
+
+                let x1 = 11;
+                let x2 = 12;
+
+                base.get().setTitle('{{words-process}} ' + x1 + 
+                ' {{words}} / {{words-complete}} ' + x2 + ' {{words}}');
+            }
+        });
+    </script>
+</head>
+
+<body class="colors-dark">
+    <z type="navbar" class="navbar-page"></z>
+</body>
+
+</html>

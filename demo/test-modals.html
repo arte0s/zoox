@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" type="text/css" href="./css/font-awesome.css">
+    <link rel="stylesheet" type="text/css" href="./css/app.css">
+
+    <style>
+        .text {
+            display: inline-block;
+            background: chartreuse;
+            padding: 15px;
+        }
+
+        button {
+            display: block;
+            margin: 10px;
+        }
+    </style>
+
+    <script src="./js/zoox.js"></script>
+
+    <script>
+        zoox.init({
+            path: 'zoox',
+            langs: ['ru', 'en'],
+            debug: 'none',
+            init: zxBase => {
+
+                const mWarn = zxBase.get('modal-warn');
+                const mAdd = zxBase.get('modal-add');
+                const mRepeat = zxBase.get('modal-repeat');
+                const mWord = zxBase.get('modal-word');
+                const mMenu = zxBase.get('modal-menu');
+                const mDial = zxBase.get('modal-dial');
+                const mModal = zxBase.get('modal');
+
+                //Hide
+                mWarn.hide();
+                mAdd.hide();
+                mRepeat.hide();
+                mWord.hide();
+                mMenu.hide();
+                mDial.hide();
+                mModal.hide();
+
+                //Set handler for button: Display
+                zxBase.get('btn-warn').setHandler(() => mWarn.display());
+                zxBase.get('btn-add').setHandler(() => mAdd.display());
+                zxBase.get('btn-repeat').setHandler(() => mRepeat.display());
+                zxBase.get('btn-word').setHandler(() => mWord.display());
+                zxBase.get('btn-menu').setHandler(() => mMenu.display());
+                zxBase.get('btn-dial').setHandler(() => mDial.display());
+                zxBase.get('btn-modal').setHandler(() => mModal.display());
+
+                //Set handler for modal: Hide
+                mWord.get('modal-dial').get('modal-window').setHandler(() => mWord.hide());
+                mDial.setCloseHandler(() => mDial.hide());
+                zxBase.get('btn-modal-close').setHandler(() => mModal.hide());
+
+                //Language test
+                const bSound = mMenu.get('btn-sound');
+                bSound.setCaption('Change lang');
+
+                let lang = zoox.getLang(); //В данный момент времени, это будет язык по умолчанию
+                bSound.setHandler(() => {
+                    lang = lang === 'ru' ? 'en' : 'ru'
+                    zoox.setLang(lang)
+                });
+
+                document.body.children[0].style.display = 'none';
+                document.body.children[1].style.display = 'initial';
+                
+                zoox.setLang('ru');
+            }
+        });
+    </script>
+</head>
+
+<body class="colors-dark">
+
+    <img class="preloader" src="img/preloader.svg">
+
+    <div style="display: none;">
+        <z type="dial-warning" id="modal-warn"></z>
+        <z type="dial-word-add" id="modal-add"></z>
+        <z type="dial-word-repeat" id="modal-repeat"></z>
+        <z type="dial-word" id="modal-word"></z>
+        <z type="dial-menu" id="modal-menu"></z>
+
+        <z type="modal-dial" class="warning" id="modal-dial">
+            <div>Тест тест тест</div>
+        </z>
+
+        <z type="modal" id="modal">
+            <div class="text">
+                Hello world!
+                <z type="button" id="btn-modal-close">X Close</z>
+            </div>
+        </z>
+
+        <z type="button" id='btn-warn'>Warning modal</z>
+        <z type="button" id='btn-add'>Add modal</z>
+        <z type="button" id='btn-repeat'>Repeat modal</z>
+        <z type="button" id='btn-word'>Word modal</z>
+        <z type="button" id='btn-menu'>Menu modal</z>
+        <z type="button" id='btn-dial'>Dial modal</z>
+        <z type="button" id='btn-modal'>Modal</z>
+    </div>
+</body>
+
+</html>

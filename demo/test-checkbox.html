@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" type="text/css" href="../css/app.css">
+
+    <style>
+        body {
+            font-size: 18px;
+            font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+        }
+
+        :root {
+            /* Background checkmark active/disable color */
+            --bg-disable: green;
+            --bg-disabled: grey;
+            /* Checkmark color */
+            --mark-color: white;
+        }
+
+        div {
+            margin: 10px;
+        }
+    </style>
+
+    <script src="../src/zoox.js"></script>
+
+    <script>
+        zoox.init({
+            path: '../controls/',
+            langs: ['ru', 'en'],
+            debug: 'none',
+            init: base => {
+
+                base.get('cb1').setHandler(e => console.log('Change checkbox 1 event: ', e));
+
+                base.get('cb1').setHandler(e => {
+
+                    base.get('cb2').setDisabled(e);
+                });
+
+                base.get('cb2').setHandler(e => {
+
+                    base.get('cb2').setCaption(e);
+                });
+            }
+        });
+    </script>
+</head>
+
+<body class="colors-dark">
+    <z type="checkbox" id="cb1">Checkbox one</z>
+    <z type="checkbox" id="cb2">Checkbox two</z>
+</body>
+
+</html>

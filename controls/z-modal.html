@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <style>
+        .modal {
+            display: flex;
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 999;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.2);
+        }
+
+        .modal-window {
+            position: relative;
+            margin: auto;
+            box-shadow: rgba(64, 64, 64, 0.5) 0 0 10px;
+        }
+    </style>
+
+    <script>
+        let fn;
+
+        zxBase.onInit = () => {
+
+            zxBase.getHTML().children[0].addEventListener("click", e => {
+                if (fn) fn(e);
+            });
+        };
+
+        zxBase.setHandler = f => fn = f;
+    </script>
+</head>
+
+<body>
+    <div class="modal">
+        <div class="modal-window">
+            <z-slot id="modal-content">{default content}</z-slot>
+        </div>
+    </div>
+</body>
+
+</html>

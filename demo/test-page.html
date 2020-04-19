@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" type="text/css" href="css/font-awesome.css">
+    <link rel="stylesheet" type="text/css" href="css/app.css">
+
+    <style>
+        .navbar {
+            background-color: #8EC6B6;
+        }
+
+        button {
+            background-color: #588C7E;
+            border-color: #588C7E;
+        }
+
+        .content {
+            background-color: #93AAC5;
+        }
+
+        #footer {
+            background-color: #D6B786;
+        }
+    </style>
+
+    <script src="js/zoox.js"></script>
+
+    <script>
+        zoox.init({
+            path: 'zoox',
+            init: base => {
+
+                console.log('Init end!');
+
+                const page = base.get('main');
+
+                /////////////////////////////////////////////////////////////////
+                //Navbar
+                const nb = base.get('navbar');
+                nb.setTitle('Test navbar');
+
+                nb.setHandler(() => {
+                    console.log('Navbar event!');
+                });
+
+                /////////////////////////////////////////////////////////////////
+                //Buttons 1
+                const root = page.getHTML().querySelector('.content');
+
+                while (root.firstChild)
+                    root.removeChild(root.firstChild);
+
+                const setHandlers = (root) => {
+
+                    let count = [0, 0, 0, 0];
+
+                    for (let i = 0; i < 4; i++) {
+
+                        let btn = root.get('btn' + i);
+
+                        btn.setHandler(() => btn.setCaption(count[i]++, 'fa fa-pause'));
+                    }
+                };
+
+                const onLoad = (cb) => {
+
+                    console.log('Load buttons end!');
+                    setHandlers(cb);
+                };
+
+                base.create(root, onLoad, 'buttons');
+
+                /////////////////////////////////////////////////////////////////
+                //Checkbox
+                const onLoadCheckbox = (cb) => {
+
+                    console.log('Load checkbox end!');
+
+                    cb.setCaption('My test');
+
+                    cb.setHandler(e => {
+                        console.log('Click event! ' + e);
+                    });
+                };
+
+                base.create(root, onLoadCheckbox, 'checkbox');
+
+                /////////////////////////////////////////////////////////////////
+                //Buttons 2
+                const footer = page.getHTML().querySelector('#footer');
+
+                while (footer.firstChild)
+                    footer.removeChild(footer.firstChild);
+
+                base.create(footer, onLoad, 'buttons');
+            }
+        });
+    </script>
+</head>
+
+<body class="colors-light">
+    <z type="page" id="main">
+        <div class="z-impl header">
+            <z type="navbar" class="navbar-page" id="navbar"></z>
+        </div>
+
+        <div class="z-impl content" id="content">content</div>
+        <!-- <div class="z-impl footer" id="footer">footer</div> -->
+    </z>
+</body>
+
+</html>

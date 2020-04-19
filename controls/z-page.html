@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <style>
+        .page {
+            display: inline-block;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .content {
+            flex-grow: 1;
+        }
+
+        button {
+            background-color: var(--main-button);
+            border-color: var(--main-button);
+        }
+
+        .navbar {
+            background-color: var(--main-header);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="page">
+        <z-slot id="header"></z-slot>
+        <z-slot class="content" id="content"></z-slot>
+        <z-slot id="footer"></z-slot>
+    </div>
+</body>
+
+</html>

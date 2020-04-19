@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <style>
+        .navbar {
+            position: relative;
+        }
+
+        .header {
+            display: inline-block;
+            margin: 12px;
+        }
+
+        .btn-close {
+            display: inline-block;
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translate(0, -50%);
+        }
+
+        /*Left arrow icon*/
+        button i:before {
+            content: "\f060";
+        }
+
+        /*Pause icon*/
+        .main-page i:before {
+            content: "\f04c";
+        }
+
+        /*Times icon*/
+        .navbar-modal i:before {
+            content: "\f00d";
+        }
+    </style>
+
+    <script>
+        zxBase.setTitle = (t) => {
+            
+            zxBase.getHTML().children[0].innerText = t;
+            zxBase.refreshTexts();
+        };
+        
+        zxBase.setHandler = f => zxBase.get().setHandler(f);
+    </script>
+</head>
+
+<body>
+    <div class="navbar">
+        
+        <div class="header" id="count-div">
+            <z-slot>{navbar header}</z-slot>
+        </div>
+
+        <div class="btn-close">
+            <z type="button" class="round"><i class="fa"></i></z>
+        </div>
+    </div>
+</body>
+
+</html>

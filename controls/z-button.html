@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <style>
+        button {
+            padding: 8px 20px;
+            cursor: pointer;
+            outline: 0;
+            font-size: 100%;
+            text-align: center;
+            text-decoration: none;
+            border-width: 1px;
+            border-style: solid;
+            border-radius: 5px;
+        }
+
+        button.round {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            padding: 10px;
+            border-radius: 50%;
+        }
+
+        button.block-button {
+            margin: 8px 0 0 0;
+            width: 100%;
+        }
+    </style>
+
+    <script>
+        let fn;
+
+        zxBase.onInit = () => {
+
+            zxBase.getHTML().addEventListener("click", e => {
+                if (fn) fn(e);
+            });
+        };
+
+        zxBase.setCaption = (t, i) => {
+
+            const cn = zxBase.getHTML();
+            const ch = zoox.utils.toArray(cn.children);
+            let span = ch.filter(e => e.tagName === 'SPAN')[0];
+
+            if (!span) {
+
+                cn.innerText = ''; //Remove old text nodes
+                span = document.createElement('SPAN');
+                cn.firstChild ? cn.insertBefore(span, cn.firstChild) : cn.appendChild(span);
+            }
+
+            span.innerText = i ? ' ' + t : t;
+
+            if (i) {
+
+                const arr = i.split(' ');
+                let icon = ch.filter(e => e.tagName === 'I')[0];
+
+                if (!icon) {
+
+                    icon = document.createElement('I');
+                    cn.firstChild ? cn.insertBefore(icon, cn.firstChild) : cn.appendChild(icon);
+                }
+
+                icon.className = "";
+                arr.forEach(s => icon.classList.add(s));
+            }
+
+            zxBase.refreshTexts();
+        };
+
+        zxBase.setHandler = f => fn = f;
+    </script>
+</head>
+
+<body>
+    <button>
+        <z-slot>{title}</z-slot>
+    </button>
+</body>
+
+</html>
