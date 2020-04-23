@@ -42,7 +42,7 @@ For fun and study =)
 
 <body>
     <button>
-        <z-slot>default implamentation</z-slot>
+        <z-slot>default implementation</z-slot>
     </button>
 </body>
 
