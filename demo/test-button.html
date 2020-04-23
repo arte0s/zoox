@@ -7,37 +7,85 @@
     <script src="../src/zoox.js"></script>
 
     <style>
+        html,
+        body {
+            font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+            font-size: 16px;
+            user-select: none;
+        }
+
         span {
             color: red;
         }
 
         div {
             color: blue;
+            padding: 10px;
         }
     </style>
 
     <script>
         zoox.init({
             path: '../controls/',
+            langs: ['ru', 'en'],
             init: zxBase => {
 
-                let count = 0;
-                zxBase.get('btn4').setCaption(count);
-                zxBase.get('btn4').setHandler(() => zxBase.get('btn4').setCaption(count++));
+                let count = [0, 0, 0, 0];
+
+                zxBase.get('btn1').setHandler(() => zxBase.get('btn1').setCaption(++count[0]));
+                zxBase.get('btn2').setHandler(() => zxBase.get('btn2').setCaption(++count[1]));
+
+                zxBase.get('btn3').setHandler(() => zxBase.get('btn3').setCaption(++count[2]));
+
+                zxBase.get('btn4').setHandler(() => {
+
+                    zxBase.get('btn3').setCaption(++count[3])
+                    zxBase.get('btn4').setCaption(count[3])
+                });
+
+                zxBase.get('btn4').setCaption('B4');
+
+                let lang = zoox.getLang(); //Set default language for init
+                console.log('lang: ' + lang);
+                
+                zxBase.get('btn1').setHandler(() => {
+                    lang = lang === 'ru' ? 'en' : 'ru'
+                    zoox.setLang(lang)
+                });
+
+                zxBase.get('btn1').setText('lang', {
+                    ru: 'Язык',
+                    en: 'Language'
+                });
+
+                zoox.setLang('ru');
+                // zxBase.refreshTexts();
             }
         });
     </script>
 </head>
 
 <body>
-    <z type="button" id="btn1"><span class="z-impl">Text 1</span></z>
+    <div>
+        <z type="button" id="btn1">
+            <div class="z-impl">{{lang}}</div>
+        </z>
+    </div>
 
-    <z type="button" id="btn2">Text 2 <span>red</span>
-        <div>blue</div>
-    </z>
+    <div>
+        <z type="button" id="btn2">
+            Button 2 <span>red</span>
+            <div>blue</div>
+        </z>
+    </div>
 
-    <z type="button" id="btn3">Text 3</z>
-    <z type="button" id="btn4"></z>
+    <div>
+        <z type="button" class="block-button" id="btn3">Button 3</z>
+    </div>
+
+    <div>
+        <z type="button" class="round" id="btn4"></z>
+    </div>
 </body>
 
 </html>

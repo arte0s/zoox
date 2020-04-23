@@ -27,6 +27,7 @@
 
         button.block-button {
             margin: 8px 0 0 0;
+            max-width: 400px;
             width: 100%;
         }
     </style>
@@ -41,36 +42,9 @@
             });
         };
 
-        zxBase.setCaption = (t, i) => {
+        zxBase.setCaption = (t) => {
 
-            const cn = zxBase.getHTML();
-            const ch = zoox.utils.toArray(cn.children);
-            let span = ch.filter(e => e.tagName === 'SPAN')[0];
-
-            if (!span) {
-
-                cn.innerText = ''; //Remove old text nodes
-                span = document.createElement('SPAN');
-                cn.firstChild ? cn.insertBefore(span, cn.firstChild) : cn.appendChild(span);
-            }
-
-            span.innerText = i ? ' ' + t : t;
-
-            if (i) {
-
-                const arr = i.split(' ');
-                let icon = ch.filter(e => e.tagName === 'I')[0];
-
-                if (!icon) {
-
-                    icon = document.createElement('I');
-                    cn.firstChild ? cn.insertBefore(icon, cn.firstChild) : cn.appendChild(icon);
-                }
-
-                icon.className = "";
-                arr.forEach(s => icon.classList.add(s));
-            }
-
+            zxBase.getHTML().innerText = t;
             zxBase.refreshTexts();
         };
 
