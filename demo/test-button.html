@@ -45,12 +45,11 @@
 
                 zxBase.get('btn4').setCaption('B4');
 
-                let lang = zoox.getLang(); //Set default language for init
-                console.log('lang: ' + lang);
-                
+                let lang = 'ru';
+
                 zxBase.get('btn1').setHandler(() => {
-                    lang = lang === 'ru' ? 'en' : 'ru'
-                    zoox.setLang(lang)
+                    lang = lang === 'ru' ? 'en' : 'ru';
+                    zoox.setLang(lang);
                 });
 
                 zxBase.get('btn1').setText('lang', {
@@ -59,7 +58,6 @@
                 });
 
                 zoox.setLang('ru');
-                // zxBase.refreshTexts();
             }
         });
     </script>
