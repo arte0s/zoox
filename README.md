@@ -11,3 +11,54 @@ ZooxJS is a tiny framework for single file components
 ## Why
 
 For fun and study =)
+
+## Goals & Features
+
+ - A lightweight and scalable
+ - No dependencies
+ - Control inheritance and encapsulation
+ - Built-in internationalization
+
+ ## Usage
+
+#### Single-file components
+
+1.Create your component in one html file with prefix `z-` (for example `z-my-button.html`)
+
+```html
+<html>
+
+<head>
+    <style>
+        ...
+    </style>
+
+    <script>
+        zxBase.onInit = () => {};
+
+        zxBase.setCaption = t => {};
+    </script>
+</head>
+
+<body>
+    <button>
+        <z-slot>default implamentation</z-slot>
+    </button>
+</body>
+
+</html>
+```
+
+2. Add framework to the page
+
+```html
+<script type="text/javascript" src="path/to/zoox.js"></script>
+```
+
+3. Add components to file
+
+```html
+<body>
+    <z type="my-button">Button caption</z>
+</body>
+```
