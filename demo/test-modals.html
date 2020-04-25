@@ -38,25 +38,30 @@
 
                 zxBase.get('btn-modal').setHandler(() => mModal.display());
                 zxBase.get('btn-modal-close').setHandler(() => mModal.hide());
+
+                document.body.children[0].style.display = 'initial';
             }
         });
     </script>
 </head>
 
-<body class="colors-dark">
+<body>
+
+    <div style="display: none">
+
+        <z type="button" id='btn-modal'>Open modal</z>
+
+        <z type="modal" id="modal">
+            <div class="text">
     
-    <z type="button" id='btn-modal'>Open modal</z>
-
-    <z type="modal" id="modal">
-        <div class="text">
-
-            <p>Hello world!</p>
-
-            <div class="content">
-                <z type="button" class="round" id="btn-modal-close">&times;</z>
+                <p>Hello world!</p>
+    
+                <div class="content">
+                    <z type="button" class="round" id="btn-modal-close">&times;</z>
+                </div>
             </div>
-        </div>
-    </z>
+        </z>    
+    </div>    
 </body>
 
 </html>
