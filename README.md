@@ -6,7 +6,9 @@
 
 # zoox.js
 
-ZooxJS is a tiny framework for single file components
+> ZooxJS is a tiny framework for single file components
+
+- [online demo](https://arte0s.github.io/zoox/)
 
 ## Why
 
@@ -21,7 +23,7 @@ For fun and study =)
 
  ## Usage
 
-#### Single-file components
+#### Example
 
 1.Create your component in one html file with prefix `z-` (for example `z-my-button.html`)
 
