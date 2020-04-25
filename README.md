@@ -10,10 +10,6 @@
 
 - [online demo](https://arte0s.github.io/zoox/)
 
-## Why
-
-For fun and study =)
-
 ## Goals & Features
 
  - A lightweight and scalable
@@ -21,9 +17,38 @@ For fun and study =)
  - Control inheritance and encapsulation
  - Built-in internationalization
 
- ## Usage
+## API
 
-#### Example
+### Main API (global functions)
+
+- `zoox.init` - Framework initialization handler
+- `zoox.utils.toArray` - Convert an HTMLCollection to an Array
+- `zoox.setLang` - Set current language
+- `zoox.getLangs` - Get all languages
+- `zoox.getLang` - Get current language
+
+### Control  API (object returns in 'zoox.init' or 'onInit' function of parent)
+
+- `get` - Get child control by UID
+- `getAll` - Get all child controls
+- `getId` - Get generated control UID
+- `getHTML` - Get HTML markup
+- `display` - Add control to the DOM
+- `hide` - Remove control from the DOM
+- `setText` - Set texts for text element (for i18n)
+- `refreshTexts` - Refresh texts for text elements
+- `setDisplayHandler` - Set handler fot displaye event
+- `setHideHandler` - Set handler fot hide event
+- `create` - Create new control
+- `copy` - Copy control
+
+### Control definition API
+
+- `onInit` - Function calls at the end of initialization
+
+## Usage
+
+### Example
 
 1.Create your component in one html file with prefix `z-` (for example `z-my-button.html`)
 
@@ -36,9 +61,15 @@ For fun and study =)
     </style>
 
     <script>
-        zxBase.onInit = () => {};
+        //Function calls at the end of initialization
+        zxBase.onInit = () => {
+            //...
+        };
 
-        zxBase.setCaption = t => {};
+        //You can define any other function
+        zxBase.setCaption = t => {
+            //...
+        };
     </script>
 </head>
 
@@ -51,16 +82,33 @@ For fun and study =)
 </html>
 ```
 
-2. Add framework to the page
+2.Add framework to the page
 
 ```html
 <script type="text/javascript" src="path/to/zoox.js"></script>
 ```
 
-3. Add components to file
+3.Add framework initialization handler code to HEAD tag
+
+```html
+<head>
+    <script>
+        zoox.init({
+            path: '../controls/',
+            langs: ['ru', 'en'],
+            init: zxBase => {}
+        });
+    </script>
+</head>
+
+4. Add components to BODY tag
 
 ```html
 <body>
     <z type="my-button">Button caption</z>
 </body>
 ```
+
+## License
+
+[MIT](https://github.com/arte0s/zoox/blob/master/LICENSE)

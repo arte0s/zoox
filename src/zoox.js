@@ -304,15 +304,13 @@ const zoox = (() => {
                 getHTML: () => get(id).html,
                 get: ch => getChildControl(id, ch, true),
                 getAll: ch => getChildren(id).map(c => c.zxBase),
-                setColor: (colorId, schema, value) => get(id).colors.push({ id: colorId, schema, value }),
                 setText: (textId, textObj) => textBuilder.create(id, textId, textObj),
                 refreshTexts: () => textBuilder.refresh(id),
                 setDisplayHandler: f => setDisplayHandlerControl(id, f),
                 setHideHandler: f => setHideHandlerControl(id, f),
                 // setLangHandler: f => ..., <-- TODO!!!
-                // setColorHandler: f => ..., <-- TODO!!!
                 create: (rElem, fn, tName, cId) => builder.create(id, rElem, fn, tName, cId),
-                copy: (sampleId, fn) => builder.copy(id, sampleId, fn),
+                copy: (sampleId, fn) => builder.copy(id, sampleId, fn)
             };
         };
 
