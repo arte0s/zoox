@@ -100,6 +100,7 @@
         });
     </script>
 </head>
+```
 
 4. Add components to BODY tag
 
