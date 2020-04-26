@@ -8,7 +8,9 @@
 
 > ZooxJS is a tiny framework for single file components
 
-- [online demo](https://arte0s.github.io/zoox/)
+- [Buttons demo](https://arte0s.github.io/zoox/demo/test-button.html)
+- [Checkboxes demo](https://arte0s.github.io/zoox/demo/test-checkbox.html)
+- [Modal window demo](https://arte0s.github.io/zoox/demo/test-modal.html)
 
 ## Goals & Features
 

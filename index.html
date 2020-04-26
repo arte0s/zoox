@@ -3,43 +3,122 @@
 
 <head>
     <meta charset="utf-8">
-    <meta name="viewport"
-        content="user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
 
-    <style>
-
-    </style>
-
-    <script>
-
-    </script>
+    <link rel="stylesheet" type="text/css" href="index.css">
 </head>
 
 <body>
-    <div>
-        <p align="center">
-            <a href="https://arte0s.github.io/zoox">
-                <a href="https://arte0s.github.io/zoox"><img src="https://arte0s.github.io/zoox/logo.svg" width="220"
-                        height="116" alt="Zoox logo"></a>
-            </a>
-        </p>
+    <p align="center">
+        <a href="https://arte0s.github.io/zoox">
+            <a href="https://github.com/arte0s/zoox"><img src="https://arte0s.github.io/zoox/logo.svg" width="220"
+                    height="116" alt="Zoox logo"></a>
+        </a>
+    </p>
 
-        <p>
-            Zoox is a tiny framework for single file components
-        </p>
 
-        <h2>Examples:</h2>
+    <h1 id="zoox.js">zoox.js</h1>
+    <blockquote>
+        <p>ZooxJS is a tiny framework for single file components</p>
+    </blockquote>
+    <h3 id="example">Live demo</h3>
+    <ul>
+        <li><a href="https://arte0s.github.io/zoox/demo/test-button.html">Buttons demo</a></li>
+        <li><a href="https://arte0s.github.io/zoox/demo/test-checkbox.html">Checkboxes demo</a></li>
+        <li><a href="https://arte0s.github.io/zoox/demo/test-modal.html">Modal window demo</a></li>
+    </ul>
+    <h2 id="goals-features">Goals &amp; Features</h2>
+    <ul>
+        <li>A lightweight and scalable<br /></li>
+        <li>No dependencies<br /></li>
+        <li>Control inheritance and encapsulation<br /></li>
+        <li>Built-in internationalization</li>
+    </ul>
+    <h2 id="api">API</h2>
+    <h3 id="main-api-global-functions">Main API (global functions)</h3>
+    <ul>
+        <li><code>zoox.init</code> - Framework initialization handler<br /></li>
+        <li><code>zoox.utils.toArray</code> - Convert an HTMLCollection to an Array<br /></li>
+        <li><code>zoox.setLang</code> - Set current language<br /></li>
+        <li><code>zoox.getLangs</code> - Get all languages<br /></li>
+        <li><code>zoox.getLang</code> - Get current language</li>
+    </ul>
+    <h3 id="control-api-object-returns-in-zoox.init-or-oninit-function-of-parent">Control API (object returns in
+        'zoox.init'
+        or 'onInit' function of parent)</h3>
+    <ul>
+        <li><code>get</code> - Get child control by UID<br /></li>
+        <li><code>getAll</code> - Get all child controls<br /></li>
+        <li><code>getId</code> - Get generated control UID<br /></li>
+        <li><code>getHTML</code> - Get HTML markup<br /></li>
+        <li><code>display</code> - Add control to the DOM<br /></li>
+        <li><code>hide</code> - Remove control from the DOM<br /></li>
+        <li><code>setText</code> - Set texts for text element (for i18n)<br /></li>
+        <li><code>refreshTexts</code> - Refresh texts for text elements<br /></li>
+        <li><code>setDisplayHandler</code> - Set handler fot displaye event<br /></li>
+        <li><code>setHideHandler</code> - Set handler fot hide event<br /></li>
+        <li><code>create</code> - Create new control<br /></li>
+        <li><code>copy</code> - Copy control</li>
+    </ul>
+    <h3 id="control-definition-api">Control definition API</h3>
+    <ul>
+        <li><code>onInit</code> - Function calls at the end of initialization</li>
+    </ul>
+    <h2 id="usage">Usage</h2>
+    <h3 id="example">Example</h3>
+    <p>1.Create your component in one html file with prefix <code>z-</code> (for example <code>z-my-button.html</code>)
+    </p>
+    <pre class="sourceCode html"><code class="sourceCode html"><span class="kw">&lt;html&gt;</span>
+<span class="kw">&lt;head&gt;</span>
+    <span class="kw">&lt;style&gt;</span>
+        <span class="fl">...</span>
+    <span class="kw">&lt;/style&gt;</span>
 
-        <ul>
-            <li><a href="https://arte0s.github.io/zoox/demo/test-button.html">Demo buttons</a></li>
-            <li><a href="https://arte0s.github.io/zoox/demo/test-checkbox.html">Demo checkboxs</a></li>
-            <li><a href="https://arte0s.github.io/zoox/demo/test-modal.html">Demo modal</a></li>
-        </ul>
+    <span class="kw">&lt;script&gt;</span>
+        <span class="co">//Function calls at the end of initialization</span>
+        <span class="ot">zxBase</span>.<span class="fu">onInit</span> = () =&gt; {
+            <span class="co">//...</span>
+        };
 
-        <p align="center">
-            <a href="https://github.com/arte0s/zoox"><img src="GitHub-Mark-32px.png"></a>
-        </p>
-    </div>
+        <span class="co">//You can define any other function</span>
+        <span class="ot">zxBase</span>.<span class="fu">setCaption</span> = t =&gt; {
+            <span class="co">//...</span>
+        };
+    <span class="kw">&lt;/script&gt;</span>
+<span class="kw">&lt;/head&gt;</span>
+
+<span class="kw">&lt;body&gt;</span>
+    <span class="kw">&lt;button&gt;</span>
+        <span class="kw">&lt;z-slot&gt;</span>default implementation<span class="kw">&lt;/z-slot&gt;</span>
+    <span class="kw">&lt;/button&gt;</span>
+<span class="kw">&lt;/body&gt;</span>
+
+<span class="kw">&lt;/html&gt;</span></code></pre>
+    <p>2.Add framework to the page</p>
+    <pre
+        class="sourceCode html"><code class="sourceCode html"><span class="kw">&lt;script</span><span class="ot"> type=</span><span class="st">&quot;text/javascript&quot;</span><span class="ot"> src=</span><span class="st">&quot;path/to/zoox.js&quot;</span><span class="kw">&gt;&lt;/script&gt;</span></code></pre>
+    <p>3.Add framework initialization handler code to HEAD tag</p>
+    <pre class="sourceCode html"><code class="sourceCode html"><span class="kw">&lt;head&gt;</span>
+    <span class="kw">&lt;script&gt;</span>
+<span class="er">        zoox.init({</span>
+            path: <span class="st">&#39;../controls/&#39;</span>,
+            langs: [<span class="st">&#39;ru&#39;</span>, <span class="st">&#39;en&#39;</span>],
+            init: zxBase =&gt; {}
+        });
+    <span class="kw">&lt;/script&gt;</span>
+<span class="kw">&lt;/head&gt;</span></code></pre>
+    <ol>
+        <li>Add components to BODY tag</li>
+    </ol>
+    <pre class="sourceCode html"><code class="sourceCode html"><span class="kw">&lt;body&gt;</span>
+    <span class="kw">&lt;z</span><span class="ot"> type=</span><span class="st">&quot;my-button&quot;</span><span class="kw">&gt;</span>Button caption<span class="kw">&lt;/z&gt;</span>
+<span class="kw">&lt;/body&gt;</span></code></pre>
+    <h2 id="license">License</h2>
+    <p><a href="https://github.com/arte0s/zoox/blob/master/LICENSE">MIT</a></p>
+
+    <p align="center">
+        <a href="https://github.com/arte0s/zoox"><img src="GitHub-Mark-32px.png"></a>
+    </p>
 </body>
 
 </html>
