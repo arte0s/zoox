@@ -1,0 +1,38 @@
+:root {
+    --clr-btn-norm: rgb(5, 87, 125);
+    --clr-btn-error: #A52A2A;
+    --clr-btn-disabled: rgb(128, 128, 128, 0.3);
+}
+
+.schema-light {
+    --clr-bground: #e9e9e9;
+
+    --clr-norm-body: rgb(215, 248, 227);
+    --clr-norm-header: rgb(90, 196, 74);
+
+    --clr-warn-body: #FCDBB9;
+    --clr-warn-header: #f2891c;
+}
+ 
+body {
+    background-color: var(--clr-norm-body);
+    color: var(--clr-btn-norm);
+    font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 16px;
+    user-select: none;
+}
+
+button {
+    background-color: var(--clr-btn-norm);
+    color: white;
+    display: block;
+    margin: 10px;
+}
+
+.error {
+    background-color: var(--clr-btn-error);
+}
+
+* {
+    -webkit-tap-highlight-color: transparent;
+}

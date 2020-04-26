@@ -6,48 +6,17 @@
     <meta name="viewport"
         content="user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width">
 
-    <!-- <link rel="stylesheet" type="text/css" href="../css/app.css"> -->
+    <link rel="stylesheet" type="text/css" href="css/demo.css">
+
     <script src="../src/zoox.js"></script>
-
-    <style>
-        html,
-        body {
-            font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
-            font-size: 16px;
-            user-select: none;
-        }
-
-        span {
-            color: red;
-        }
-
-        div {
-            color: blue;
-            padding: 10px;
-        }
-    </style>
 
     <script>
         zoox.init({
-            path: '../controls/',
+            path: './controls/',
             langs: ['ru', 'en'],
             init: zxBase => {
 
-                let count = [0, 0, 0, 0];
-
-                zxBase.get('btn1').setHandler(() => zxBase.get('btn1').setCaption(++count[0]));
-                zxBase.get('btn2').setHandler(() => zxBase.get('btn2').setCaption(++count[1]));
-
-                zxBase.get('btn3').setHandler(() => zxBase.get('btn3').setCaption(++count[2]));
-
-                zxBase.get('btn4').setHandler(() => {
-
-                    zxBase.get('btn3').setCaption(++count[3])
-                    zxBase.get('btn4').setCaption(count[3])
-                });
-
-                zxBase.get('btn4').setCaption('B4');
-
+                //Button 1
                 let lang = 'ru';
 
                 zxBase.get('btn1').setHandler(() => {
@@ -55,38 +24,42 @@
                     zoox.setLang(lang);
                 });
 
-                zxBase.get('btn1').setText('lang', {
-                    ru: 'Язык',
-                    en: 'Language'
+                zxBase.get('btn1').setText('btn1-caption', {
+                    ru: 'Сменить язык',
+                    en: 'Change language'
+                });
+
+                zxBase.get('btn2').setText('btn2-caption', {
+                    ru: 'Инвертировать цвет',
+                    en: 'Invert color'
                 });
 
                 zoox.setLang('ru');
+
+                //Button 2
+                zxBase.get('btn2').setHandler(() => {
+
+                    for (let i = 1; i <= 3; i++)
+                        zxBase.get('btn' + i).getHTML().classList.toggle('error');
+                });
+
+
+                //Button 3
+                let count = 0;
+
+                zxBase.get('btn3').setHandler(() => {
+
+                    zxBase.get('btn3').setCaption(++count)
+                });
             }
         });
     </script>
 </head>
 
-<body>
-    <div>
-        <z type="button" id="btn1">
-            <div class="z-impl">{{lang}}</div>
-        </z>
-    </div>
-
-    <div>
-        <z type="button" id="btn2">
-            Button 2 <span>red</span>
-            <div>blue</div>
-        </z>
-    </div>
-
-    <div>
-        <z type="button" class="block-button" id="btn3">Button 3</z>
-    </div>
-
-    <div>
-        <z type="button" class="round" id="btn4"></z>
-    </div>
+<body class="schema-light">
+    <z type="button" id="btn1">{{btn1-caption}}</z>
+    <z type="button" id="btn2" class="error">{{btn2-caption}}</z>
+    <z type="button" class="round" id="btn3">+1</z>
 </body>
 
 </html>

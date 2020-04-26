@@ -6,13 +6,17 @@
     <meta name="viewport"
         content="user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width">
 
+    <link rel="stylesheet" type="text/css" href="css/demo.css">
+
     <style>
-        .text {
-            display: block;
-            width: 300px;
-            background: chartreuse;
-            padding: 15px;
+        .modal-window {
+            top: -50px;
+            border-radius: 5px;
+            background-color: var(--clr-norm-body);
+            padding: 10px;
             text-align: center;
+            width: 94%;
+            max-width: 300px;
         }
 
         .content {
@@ -20,6 +24,7 @@
         }
 
         button {
+            background-color: var(--clr-btn-norm);
             display: block;
             margin: 10px;
         }
@@ -29,7 +34,7 @@
 
     <script>
         zoox.init({
-            path: '../controls/',
+            path: './controls/',
             langs: ['ru', 'en'],
             debug: 'none',
             init: zxBase => {
@@ -47,23 +52,20 @@
     </script>
 </head>
 
-<body>
+<body class="schema-light">
 
     <div style="display: none">
 
         <z type="button" id='btn-modal'>Open modal</z>
 
         <z type="modal" id="modal">
-            <div class="text">
-    
-                <p>Hello world!</p>
-    
-                <div class="content">
-                    <z type="button" class="round" id="btn-modal-close">&times;</z>
-                </div>
+            <p>Hello world!</p>
+
+            <div class="content">
+                <z type="button" class="round" id="btn-modal-close">&times;</z>
             </div>
-        </z>    
-    </div>    
+        </z>
+    </div>
 </body>
 
 </html>
