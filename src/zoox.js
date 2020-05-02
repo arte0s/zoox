@@ -176,7 +176,7 @@ const zoox = (() => {
 
             const getSlots = (e) => utils.toArray(e.getElementsByTagName(C.ZX.SLOT)).map(s => utils.getId(s));
 
-            const getChildren = (e) => {
+            const getChildArray = (e) => {
 
                 const ch = [];
                 if (utils.isBlock(e))
@@ -187,7 +187,7 @@ const zoox = (() => {
                 return ch;
             };
 
-            const addInner = (html, styles, onCreateFn, name = null) => {
+            return (html, styles, onCreateFn, name = null) => {
 
                 const type = Object.seal({
                     name,                           //Имя типа (null для главной страницы)
@@ -196,15 +196,13 @@ const zoox = (() => {
                     onCreateFn,                     //JS (создаётся объект для каждого инстанса)
                     display: 0,                     //Количество отображаемых контролов 
                     slots: getSlots(html),          //Места расширений
-                    children: getChildren(html),    //Информация о компонентах (инстансах объявленных внутри типа)
+                    children: getChildArray(html),    //Информация о компонентах (инстансах объявленных внутри типа)
                     dynCount: 0
                 });
 
                 data.push(type); //Добавим тип в массив типов
                 return type;
-            }
-
-            return addInner;
+            };
         })();
 
         const get = (name) => data.find(t => t.name === name);
@@ -297,18 +295,33 @@ const zoox = (() => {
         };
 
         //////////////////////////////////////////////////////////////
-        const getChildren = (id, mode) => data.filter(d => mode ? d.sId === id : d.pId === id);
+        //Get children by parent id
+        const getChildren = (id) => data.filter(d => d.pId === id);
 
-        const getChildControl = (id, cId = null, mode) => {
+        //Get children by source id (where the control was declared) 
+        const getChildrenBySrc = (id) => data.filter(d => d.sId === id);
 
-            const ch = getChildren(id, mode).find(c => c.cId === cId);
+        const getChildControl = (id, cId = null) => {
 
-            //TODO: Сделать ленивую инициализацию
+            let ch = getChildrenBySrc(id).find(c => c.cId === cId);
+
             if (!ch)
                 throw new Error("Control with parent ID '" + id
                     + "' and component ID '" + cId + "' not found");
 
             return ch.zxBase;
+        };
+
+        const prepare = (id, cId = null, fn) => {
+
+            log();
+
+            let ch = getChildrenBySrc(id).find(c => c.cId === cId);
+
+            if (!ch)
+                builder.createLazy(fn, cId, get(id)); //Lazy load
+            else if (fn)
+                fn(ch.zxBase);
         };
 
         const createId = cId => cId + '-' + count++;
@@ -327,7 +340,8 @@ const zoox = (() => {
                 hide: () => hideControl(id),
                 getId: () => id,
                 getHTML: () => get(id).html,
-                get: ch => getChildControl(id, ch, true),
+                get: ch => getChildControl(id, ch),
+                prepare: (ch, fn) => prepare(id, ch, fn),
                 getAll: ch => getChildren(id).map(c => c.zxBase),
                 setText: (textId, textObj) => textBuilder.create(id, textId, textObj),
                 refreshTexts: () => textBuilder.refresh(id),
@@ -373,7 +387,7 @@ const zoox = (() => {
         };
 
         //////////////////////////////////////////////////////////////
-        const initControl = (id, zxBase) => {
+        const initControl = (id, zxBase, fn) => {
 
             if (!id) {
                 types.log('name', 'children');
@@ -387,6 +401,9 @@ const zoox = (() => {
 
             if (!id) //После всех вызовов onInit()
                 textBuilder.setLang();  //Задавать из вне
+
+            if (fn)
+                fn(zxBase);
         };
 
         //////////////////////////////////////////////////////////////
@@ -404,7 +421,7 @@ const zoox = (() => {
                 html,
                 displayFn: null,
                 hideFn: null,
-                init: () => initControl(id, zxBase),
+                init: fn => initControl(id, zxBase, fn),
                 zxBase,
                 colors: [],
                 texts: [],
@@ -430,13 +447,16 @@ const zoox = (() => {
 
         const getIds = () => data.map(c => c.id);
 
+        const log = () => console.log('data:', data);
+        
         //////////////////////////////////////////////////////////////
         return Object.freeze({
             createId,
             add,
             get,
             getTextData,
-            getIds
+            getIds,
+            log
         });
     })();
 
@@ -583,66 +603,51 @@ const zoox = (() => {
         //-----------------------------------------------------------
         const loadType = (() => {
 
-            const typeCounter = (() => {
+            const handlers = []; //Type name, handler
 
-                const data = []; //Имя типа + функция обработчик
+            const getHandler = name => handlers.filter(t => t.name === name).map(t => t.func);
 
-                const add = (name, func) => {
-                    const exist = data.find(t => t.name === name);
-                    data.push({ name, func });
-                    return exist;
-                };
+            const onInit = (name, responseHTML) => {
 
-                return Object.freeze({
-                    add,
-                    get: name => data.filter(t => t.name === name).map(t => t.func)
-                });
-            })();
+                const doc = (new DOMParser()).parseFromString(responseHTML, "text/html");
 
-            const load = (name, func) => {
+                const css = doc.querySelector(C.TAG.STYLE);
+                const script = doc.querySelector(C.TAG.SCRIPT);
+                const html = doc.querySelector(C.TAG.BODY).children[0];
 
-                const onInit = (name, responseHTML) => {
+                //Add comment with type name to code & create new function
+                const fn = (() => script
+                    ? new Function(C.ZX.PARAM, C.TXT.TAB + C.TXT.TAB + '//' + name + C.TXT.BREAK
+                        + C.TXT.TAB + C.TXT.TAB + '"use strict";' + C.TXT.BREAK
+                        + script.innerText) : null)();
 
-                    const doc = (new DOMParser()).parseFromString(responseHTML, "text/html");
-
-                    const css = doc.querySelector(C.TAG.STYLE);
-                    const script = doc.querySelector(C.TAG.SCRIPT);
-                    const html = doc.querySelector(C.TAG.BODY).children[0];
-
-                    //Add comment with type name to code & create new function
-                    const fn = (() => script
-                        ? new Function(C.ZX.PARAM, C.TXT.TAB + C.TXT.TAB + '//' + name + C.TXT.BREAK
-                            + C.TXT.TAB + C.TXT.TAB + '"use strict";' + C.TXT.BREAK
-                            + script.innerText) : null)();
-
-                    const type = types.add(html, css, fn, name);
-                    typeCounter.get(name).forEach(f => f(type));
-                };
-
-                const load = () => {
-
-                    const xhr = new XMLHttpRequest();
-                    xhr.open('GET', path + C.ZX.PREFIX + '-' + name + '.html', true);
-                    xhr.onreadystatechange = function () {
-
-                        if (this.readyState !== 4) return;
-                        if (this.status !== 200) return; //TODO: Add error handling
-                        onInit(name, this.responseText);
-                    };
-
-                    xhr.send();
-                };
-
-                //Find type
-                const type = types.get(name);
-
-                if (type)
-                    func(type); //If type found, call callback function immediately 
-                else if (!typeCounter.add(name, func)) //If type is loading now, add handler to the list
-                    load(); //If it's a new type, start loading 
+                const type = types.add(html, css, fn, name);
+                getHandler(name).forEach(f => f(type));
             };
 
-            return load;
+            const load = name => {
+
+                const xhr = new XMLHttpRequest();
+                xhr.open('GET', path + C.ZX.PREFIX + '-' + name + '.html', true);
+                xhr.onreadystatechange = function () {
+
+                    if (this.readyState !== 4) return;
+                    if (this.status !== 200) return; //TODO: Add error handling
+                    onInit(name, this.responseText);
+                };
+
+                xhr.send();
+            };
+
+            return (name, func) => {
+
+                const exist = handlers.find(t => t.name === name);
+
+                handlers.push({ name, func });
+
+                if (!exist) //If new type start loading it
+                    load(name);
+            };
         })();
 
         //-----------------------------------------------------------
@@ -691,8 +696,8 @@ const zoox = (() => {
 
                 //Добавляем impl в соответствующий slot
                 if (stControl)
-                    pChildren.find(c => c.id === cId).impl
-                        .forEach(i => slotImpliment(i.id, html, rElem, newId));
+                    pChildren.find(c => c.id === cId)
+                        .impl.forEach(i => slotImpliment(i.id, html, rElem, newId));
 
                 //Move class atrribute from "Z" tag to root element
                 utils.toArray(rElem.classList).forEach(c => {
@@ -706,68 +711,89 @@ const zoox = (() => {
             };
 
             //////////////////////////////////////////////////////////////
-            const createInner = (counter, cId, pType, pHTML, pId = null, tName) => {
+            const onInitEnd = (cnt, dyn, contr) => {
+
+                if (!dyn){
+
+                    inst.log();
+                    console.time('onInitEnd');
+                }
+
+                const rootControl = dyn ? contr : inst.get();
+
+                rootControl.init(cnt.onInitEnd);
+
+                if (!dyn)
+                    console.timeEnd('onInitEnd');
+            };
+
+            //////////////////////////////////////////////////////////////
+            const createEnd = (type, counter, cId, pType, pId, dynamic, lazyLoad, rElem) => {
+
+                const newId = inst.createId(cId);
+
+                //Renew attribut value in root control
+                rElem.setAttribute(C.ATTR.ID, newId);
+
+                //Add CSS (for first control) by default
+                types.display(type.name);
+
+                //Create HTML-markup
+                const html = createHTML(type.html, cId, pType.children, rElem, newId, !dynamic);
+
+                //Create new instanse and get his id
+                const newControl = inst.add(rElem, html, type.onCreateFn, type.name, cId, newId, pId);
+
+                //Recursively initialize child elements of type
+                type.children.forEach(comp => createInstance(counter, comp.id, newControl));
+
+                counter.incInit();
+
+                //On initialization end
+                if (counter.isInitEnd())
+                    onInitEnd(counter, dynamic || lazyLoad, newControl);
+            };
+
+            //////////////////////////////////////////////////////////////
+            return (counter, cId, rContr, tName, lazyLoad) => {
+
+                const pType = types.get(rContr.type);
 
                 if (!cId && pType.children.length > 1)
                     throw new Error('Attribute `ID` for control doesn\'t set!');
 
-                //Находим точку добавления контрола
-                const rElem = utils.isBlock(pHTML) && (pHTML.id === cId || !cId)
-                    ? pHTML : !cId
-                        ? utils.getBlocks(pHTML)[0] //Ищем просто первый блок
-                        : pHTML.querySelector(C.CSS.ID + cId);
+                //Find root element for control addition
+                const rElem = utils.isBlock(rContr.html) && (rContr.html.id === cId || !cId)
+                    ? rContr.html : !cId
+                        ? utils.getBlocks(rContr.html)[0] //Just find first z-tag
+                        : rContr.html.querySelector(C.CSS.ID + cId);
 
-                //Сгенерируем ид контрола и обвном значение атрибута ид в корневом элементе
-                const newId = inst.createId(cId);
-                rElem.setAttribute(C.ATTR.ID, newId);
+                //For lazy initialization
+                if (!lazyLoad) {
 
-                //Инстанс корневого контрола
-                let rootContr;
+                    if (rElem.getAttribute('z-hide') !== null) {
 
-                //////////////////////////////////////////////////////////////
-                //Create instance of the control (right now or after load)
-                const callBackFn = (type) => {
-
-                    types.display(type.name); //Add CSS (for first control) by default
-
-                    //Формируем HTML-разметку
-                    const html = createHTML(type.html, cId, pType.children, rElem, newId, !tName);
-
-                    //Создаём новый контрол и получаем его идентификатор
-                    const newControl = inst.add(rElem, html, type.onCreateFn, type.name, cId, newId, pId);
-
-                    //Сохраним корневой инстанс для случая его динамического создания
-                    if (tName)
-                        rootContr = newControl;
-
-                    //Рекурсивно проинициализируем дочерние элементы типа
-                    type.children.forEach(comp => createInner(counter, comp.id, type, html, newControl.id));
-
-                    counter.incInit();
-
-                    //End process! 
-                    if (counter.isInitEnd()) {
-
-                        if (!tName)
-                            rootContr = inst.get(); //To get global root control
-
-                        if (!tName)
-                            console.time('onInitEnd');
-
-                        rootContr.init(); //Load controls & call zxBase.load() function
-                        counter.onInitEnd(rootContr.zxBase);
-
-                        if (!tName)
-                            console.timeEnd('onInitEnd');
+                        rElem.style.display = 'none';
+                        return;
                     }
-                };
+                } else {
 
-                //////////////////////////////////////////////////////////////
+                    rElem.style.display = '';
+                }
+
                 counter.incFound();
-                loadType(tName || types.getChildName(pType.name, cId), callBackFn);
-            };
 
-            return createInner;
+                const name = tName || types.getChildName(pType.name, cId);
+                const endFn = type => createEnd(type, counter, cId, pType, rContr.id, !!tName, lazyLoad, rElem);
+
+                //Find type
+                const type = types.get(name);
+
+                if (type)
+                    endFn(type); //Call callback function immediately 
+                else
+                    loadType(name, endFn); //Add handler to the list & start loading for first handler
+            };
         })();
 
         //////////////////////////////////////////////////////////////
@@ -811,14 +837,10 @@ const zoox = (() => {
             //Create block element
             createBlock(rElem, tName, cId);
 
-            createInstance(
-                getCounter(fn),
-                cId,
-                rType,
-                rContr.html,
-                rContr ? rContr.id : null,
-                tName);
+            createInstance(getCounter(fn), cId, rContr, tName);
         };
+
+        const createLazy = (fn, cId, rContr) => createInstance(getCounter(fn), cId, rContr, null, true);
 
         const copy = (rId, sampleId, fn) => {
 
@@ -850,16 +872,16 @@ const zoox = (() => {
             utils.setDebugMode(s.debug ? s.debug : 'none');
             textBuilder.setLangs(s.langs ? s.langs : ['en']);
 
-            //Предварительно создадим тип, чтобы избежать попытки его загрузить
+            //Create type right now to prevent try of load it
             const rType = types.add(document.body);
 
-            inst.add(
+            const pContr = inst.add(
                 document.body.parentElement,
                 document.body,
                 zxBase => zxBase.onInit = () => s.init(zxBase));
 
             const cnt = getCounter();
-            rType.children.forEach(comp => createInstance(cnt, comp.id, rType, rType.html));
+            rType.children.forEach(comp => createInstance(cnt, comp.id, pContr));
         });
 
         let path;
@@ -867,6 +889,7 @@ const zoox = (() => {
         return Object.freeze({
             init,
             create,
+            createLazy,
             copy,
             massCopy,
             free
