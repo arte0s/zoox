@@ -41,14 +41,12 @@
 - `hide` - Remove control from the DOM
 - `setText` - Set texts for text element (for i18n)
 - `refreshTexts` - Refresh texts for text elements
+- `setInitHandler` - Set handler fot initializition event
+- `setLazyHandler` - Set handler fot child lazy initializition event
 - `setDisplayHandler` - Set handler fot displaye event
 - `setHideHandler` - Set handler fot hide event
 - `create` - Create new control
 - `copy` - Copy control
-
-### Control definition API
-
-- `onInit` - Function calls at the end of initialization
 
 ## Usage
 
