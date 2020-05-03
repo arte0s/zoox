@@ -244,211 +244,211 @@ const zoox = (() => {
     const inst = (() => {
 
         let count = 0;
-        let cSchema = 'default';
 
         const data = [];
 
         const get = (id = null) => data.find(c => c.id === id);
-
-        //////////////////////////////////////////////////////////////
-        const dispType = contr => { //Рекурсивно отобразить все дочерние типы
-
-            if (contr.visible) return;
-            contr.visible = true;
-
-            types.display(contr.type);
-            getChildren(contr.id).forEach(c => dispType(c));
-        };
-
-        const dispControl = id => {
-
-            const cont = get(id);
-
-            console.log('display:', cont.type, cont.id);
-            cont.rootEl.appendChild(cont.html);
-            dispType(cont);
-
-            if (cont.displayFn) cont.displayFn();
-        };
-
-        //////////////////////////////////////////////////////////////
-        const hideType = contr => { //Рекурсивно скрыть все дочерние типы
-
-            if (!contr.visible) return;
-            contr.visible = false;
-
-            types.hide(contr.type);
-            getChildren(contr.id).forEach(c => hideType(c));
-        };
-
-        const hideControl = id => {
-
-            const cont = get(id);
-
-            if (!(cont.hideFn ? cont.hideFn() : false)) {
-
-                console.log('hide:', cont.type, cont.id);
-                cont.html.parentNode.removeChild(cont.html);
-                hideType(cont);
-                return true;
-            };
-        };
-
-        //////////////////////////////////////////////////////////////
-        //Get children by parent id
-        const getChildren = (id) => data.filter(d => d.pId === id);
-
-        //Get children by source id (where the control was declared) 
-        const getChildrenBySrc = (id) => data.filter(d => d.sId === id);
-
-        const getChildControl = (id, cId = null) => {
-
-            let ch = getChildrenBySrc(id).find(c => c.cId === cId);
-
-            if (!ch)
-                throw new Error("Control with parent ID '" + id
-                    + "' and component ID '" + cId + "' not found");
-
-            return ch.zxBase;
-        };
-
-        const prepare = (id, cId = null, fn) => {
-
-            log();
-
-            let ch = getChildrenBySrc(id).find(c => c.cId === cId);
-
-            if (!ch)
-                builder.createLazy(fn, cId, get(id)); //Lazy load
-            else if (fn)
-                fn(ch.zxBase);
-        };
-
+        const getChildren = (id) => data.filter(d => d.pId === id); //Get children by parent id
         const createId = cId => cId + '-' + count++;
-        const setDisplayHandlerControl = (id, f) => get(id).displayFn = f;
-        const setHideHandlerControl = (id, f) => get(id).hideFn = f;
-
-        //Результат get(id) на момент инициализации не определён!
-        const createBaseManager = (id) => {
-
-            if (id !== null)
-                utils.checks.oblig(id);
-
-            return {
-                onInit: () => { }, //Для определения в контролах
-                display: () => dispControl(id),
-                hide: () => hideControl(id),
-                getId: () => id,
-                getHTML: () => get(id).html,
-                get: ch => getChildControl(id, ch),
-                prepare: (ch, fn) => prepare(id, ch, fn),
-                getAll: ch => getChildren(id).map(c => c.zxBase),
-                setText: (textId, textObj) => textBuilder.create(id, textId, textObj),
-                refreshTexts: () => textBuilder.refresh(id),
-                setDisplayHandler: f => setDisplayHandlerControl(id, f),
-                setHideHandler: f => setHideHandlerControl(id, f),
-                // setLangHandler: f => ..., <-- TODO!!!
-                create: (rElem, fn, tName, cId) => builder.create(id, rElem, fn, tName, cId),
-                copy: (sampleId, fn) => builder.copy(id, sampleId, fn)
-            };
-        };
-
-        const createManager = (id, onCreateFn) => {
-
-            const zxBase = createBaseManager(id);
-
-            //Add custom functions
-            if (onCreateFn)
-                onCreateFn(zxBase);
-
-            return Object.freeze(zxBase);
-        };
-
-        //////////////////////////////////////////////////////////////
-        const renewParent = (id) => {
-
-            const checkImpl = (impl, cId) => impl.find(i => !!i.components.find(c => c === cId));
-
-            const cntr = get(id);
-            const pControl = data.find(c => c.id === cntr.pId);
-            const pType = types.get(pControl ? pControl.type : null);
-
-            //В имплементациях компонентов родительского типа ищем компонент с ид. = ид. типа текущего контрола 
-            const newType = pType ? pType.children.find(ch => checkImpl(ch.impl, cntr.cId)) : null;
-
-            const newControl = newType
-                ? data.filter(d => d.sId === cntr.pId).find(c => c.cId === newType.id) : null;
-
-            if (newType && !newControl)
-                throw new Error("Component '" + newType.id + "' in control '" + cntr.pId + "' not found");
-
-            if (newControl)
-                cntr.pId = newControl.id;
-        };
-
-        //////////////////////////////////////////////////////////////
-        const initControl = (id, zxBase, fn) => {
-
-            if (!id) {
-                types.log('name', 'children');
-                utils.log('INST', data);
-                //Будут ли имплементации при динамической инициализации?
-                data.forEach(c => renewParent(c.id));
-            }
-
-            getChildren(id).forEach(c => initControl(c.id, c.zxBase)); //Load children
-            zxBase.onInit(); //Переопределяется в конкретном контроле
-
-            if (!id) //После всех вызовов onInit()
-                textBuilder.setLang();  //Задавать из вне
-
-            if (fn)
-                fn(zxBase);
-        };
-
-        //////////////////////////////////////////////////////////////
-        const add = (rootEl, html, onCreateFn, tName = null, cId, id = null, pId) => {
-
-            const zxBase = createManager(id, onCreateFn);
-
-            const control = Object.seal({
-                type: tName,
-                id,
-                cId, //Идентификатор компонента 
-                sId: pId, //Source parent ID (изначальный родительский ид.)
-                pId,
-                rootEl,
-                html,
-                displayFn: null,
-                hideFn: null,
-                init: fn => initControl(id, zxBase, fn),
-                zxBase,
-                colors: [],
-                texts: [],
-                nodes: [],
-                visible: false //Зависит от корневого элемента
-            });
-
-            data.push(control);
-            return control;
-        };
-
-        //////////////////////////////////////////////////////////////
+        
         const getTextData = id => {
-
+            
             const c = get(id);
-
+            
             return Object.freeze({
                 html: c.html,
                 nodes: c.nodes,
                 texts: c.texts
             });
         };
-
-        const getIds = () => data.map(c => c.id);
-
-        const log = () => console.log('data:', data);
         
+        const getIds = () => data.map(c => c.id);
+        const log = () => console.log('data:', data);
+
+        //////////////////////////////////////////////////////////////
+        //Результат get(id) на момент инициализации не определён!
+        const createBase = (() => {
+
+            const dispType = contr => { //Рекурсивно отобразить все дочерние типы
+
+                if (contr.visible) return;
+                contr.visible = true;
+
+                types.display(contr.type);
+                getChildren(contr.id).forEach(c => dispType(c));
+            };
+
+            const dispControl = id => {
+
+                const cont = get(id);
+
+                console.log('display:', cont.type, cont.id);
+                cont.rootEl.appendChild(cont.html);
+                dispType(cont);
+
+                if (cont.displayFn) cont.displayFn();
+            };
+
+            //////////////////////////////////////////////////////////////
+            const hideType = contr => { //Рекурсивно скрыть все дочерние типы
+
+                if (!contr.visible) return;
+                contr.visible = false;
+
+                types.hide(contr.type);
+                getChildren(contr.id).forEach(c => hideType(c));
+            };
+
+            const hideControl = id => {
+
+                const cont = get(id);
+
+                if (!(cont.hideFn ? cont.hideFn() : false)) {
+
+                    console.log('hide:', cont.type, cont.id);
+                    cont.html.parentNode.removeChild(cont.html);
+                    hideType(cont);
+                    return true;
+                };
+            };
+
+            //Get children by source id (where the control was declared) 
+            const getChildrenBySrc = (id) => data.filter(d => d.sId === id);
+
+            const getChildControl = (id, cId = null) => {
+
+                let ch = getChildrenBySrc(id).find(c => c.cId === cId);
+
+                if (!ch)
+                    throw new Error("Control with parent ID '" + id
+                        + "' and component ID '" + cId + "' not found");
+
+                return ch.zxBase;
+            };
+
+            const setLazyHandler = (id, cId = null, fn) => {
+
+                log();
+
+                let ch = getChildrenBySrc(id).find(c => c.cId === cId);
+
+                if (!ch)
+                    builder.createLazy(fn, cId, get(id)); //Lazy load
+                else if (fn)
+                    fn(ch.zxBase);
+            };
+
+            const setDisplayHandlerControl = (id, f) => get(id).displayFn = f;
+            const setHideHandlerControl = (id, f) => get(id).hideFn = f;
+
+            //////////////////////////////////////////////////////////////
+            return (id) => {
+
+                if (id !== null)
+                    utils.checks.oblig(id);
+
+                return {
+                    display: () => dispControl(id),
+                    hide: () => hideControl(id),
+                    getId: () => id,
+                    getHTML: () => get(id).html,
+                    get: ch => getChildControl(id, ch),
+                    getAll: ch => getChildren(id).map(c => c.zxBase),
+                    setText: (textId, textObj) => textBuilder.create(id, textId, textObj),
+                    refreshTexts: () => textBuilder.refresh(id),
+                    setLazyHandler: (ch, fn) => setLazyHandler(id, ch, fn),
+                    setDisplayHandler: fn => setDisplayHandlerControl(id, fn),
+                    setHideHandler: f => setHideHandlerControl(id, f),
+                    // setLangHandler: f => ..., <-- TODO!!!
+                    create: (rElem, fn, tName, cId) => builder.create(id, rElem, fn, tName, cId),
+                    copy: (sampleId, fn) => builder.copy(id, sampleId, fn)
+                };
+            }
+        })();
+
+        //////////////////////////////////////////////////////////////
+        const add = (() => {
+
+            const renewParent = (id) => {
+
+                const checkImpl = (impl, cId) => impl.find(i => !!i.components.find(c => c === cId));
+
+                const cntr = get(id);
+                const pControl = data.find(c => c.id === cntr.pId);
+                const pType = types.get(pControl ? pControl.type : null);
+
+                //В имплементациях компонентов родительского типа ищем компонент с ид. = ид. типа текущего контрола 
+                const newType = pType ? pType.children.find(ch => checkImpl(ch.impl, cntr.cId)) : null;
+
+                const newControl = newType
+                    ? data.filter(d => d.sId === cntr.pId).find(c => c.cId === newType.id) : null;
+
+                if (newType && !newControl)
+                    throw new Error("Component '" + newType.id + "' in control '" + cntr.pId + "' not found");
+
+                if (newControl)
+                    cntr.pId = newControl.id;
+            };
+
+            const initControl = (id, fn) => {
+
+                if (!id) {
+                    types.log('name', 'children');
+                    utils.log('INST', data);
+                    //Будут ли имплементации при динамической инициализации?
+                    data.forEach(c => renewParent(c.id));
+                }
+
+                getChildren(id).forEach(c => initControl(c.id)); //Load children
+
+                const control = get(id);
+                if (control.initFn)
+                    control.initFn();  //Переопределяется в конкретном контроле
+
+                if (!id) //После всех вызовов onInit()
+                    textBuilder.setLang();  //Задавать из вне
+
+                if (fn)
+                    fn(control.zxBase);
+            };
+
+            //////////////////////////////////////////////////////////////
+            return (rootEl, html, onCreateFn, tName = null, cId, id = null, pId) => {
+
+                const zxBase = createBase(id);
+
+                //Save init function to the variable & add setter method to thr zxBase
+                let initFn;
+                zxBase.setInitHandler = fn => initFn = fn;
+
+                //Add custom functions
+                if (onCreateFn)
+                    onCreateFn(zxBase);
+
+                const control = Object.seal({
+                    type: tName,
+                    id,
+                    cId, //Идентификатор компонента 
+                    sId: pId, //Source parent ID (изначальный родительский ид.)
+                    pId,
+                    rootEl,
+                    html,
+                    initFn,
+                    displayFn: null,
+                    hideFn: null,
+                    init: fn => initControl(id, fn),
+                    zxBase: Object.freeze(zxBase),
+                    colors: [],
+                    texts: [],
+                    nodes: [],
+                    visible: false //Зависит от корневого элемента
+                });
+
+                data.push(control);
+                return control;
+            }
+        })();
+
         //////////////////////////////////////////////////////////////
         return Object.freeze({
             createId,
@@ -713,7 +713,7 @@ const zoox = (() => {
             //////////////////////////////////////////////////////////////
             const onInitEnd = (cnt, dyn, contr) => {
 
-                if (!dyn){
+                if (!dyn) {
 
                     inst.log();
                     console.time('onInitEnd');
@@ -878,7 +878,7 @@ const zoox = (() => {
             const pContr = inst.add(
                 document.body.parentElement,
                 document.body,
-                zxBase => zxBase.onInit = () => s.init(zxBase));
+                zxBase => zxBase.setInitHandler(() => s.init(zxBase)));
 
             const cnt = getCounter();
             rType.children.forEach(comp => createInstance(cnt, comp.id, pContr));

@@ -22,24 +22,22 @@
                 const changeDisplay = () => {
 
                     cMode = !cMode;
-
-                    console.log('init:', cMode);
-
                     cMode ? zxBase.get('btn2').hide() : zxBase.get('btn2').display();
+                };
+
+                const changeColors = () => {
+
+                    console.log('Button 2 click');
+
+                    zxBase.get('btn1').getHTML().classList.toggle('error');
+                    zxBase.get('btn2').getHTML().classList.toggle('error');
                 };
 
                 //Button 2
                 const initButton2 = zxBtn => {
 
                     init = true;
-
-                    zxBtn.setHandler(() => {
-
-                        console.log('Button 2 click');
-
-                        zxBase.get('btn1').getHTML().classList.toggle('error');
-                        zxBtn.getHTML().classList.toggle('error');
-                    });
+                    zxBtn.setHandler(changeColors);
                 };
 
                 //Button 1
@@ -48,7 +46,7 @@
                     console.log('Button 1 click');
 
                     if (!init)
-                        zxBase.prepare('btn2', initButton2)
+                        zxBase.setLazyHandler('btn2', initButton2)
                     else
                         changeDisplay();
                 });

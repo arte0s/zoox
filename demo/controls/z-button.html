@@ -35,12 +35,12 @@
     <script>
         let fn;
 
-        zxBase.onInit = () => {
+        zxBase.setInitHandler(() => {
 
             zxBase.getHTML().addEventListener("click", e => {
                 if (fn) fn(e);
             });
-        };
+        });
 
         zxBase.setCaption = (t) => {
 
