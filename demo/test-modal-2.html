@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+
+    <link rel="stylesheet" type="text/css" href="css/demo.css">
+
+    <style>
+        .modal-window {
+            top: -50px;
+            border-radius: 5px;
+            background-color: var(--clr-norm-body);
+            padding: 10px;
+            text-align: center;
+            width: 94%;
+            max-width: 300px;
+        }
+
+        .content {
+            display: inline-block;
+        }
+
+        button {
+            background-color: var(--clr-btn-norm);
+            display: block;
+            margin: 10px;
+        }
+    </style>
+
+    <script src="../src/zoox.js"></script>
+
+    <script>
+        zoox.init({
+            path: './controls/',
+            langs: ['ru', 'en'],
+            debug: 'none',
+            init: zxBase => {
+
+                let zxModal;
+
+                zxBase.get('btn-modal').setHandler(() => {
+
+                    if (zxModal)
+                        zxModal.display();
+                    else
+                        zxBase.setLazyHandler('modal', zxMod => {
+
+                            zxModal = zxMod;
+                            zxBase.get('btn-modal-close').setHandler(() => zxModal.hide());
+                        });
+                });
+
+                document.body.children[0].style.display = 'initial';
+            }
+        });
+    </script>
+</head>
+
+<body class="schema-light">
+
+    <div style="display: none">
+
+        <z type="button" id='btn-modal'>Open modal</z>
+
+        <z type="modal" id="modal" z-lazy>
+            <p>Hello world!</p>
+
+            <div class="content">
+                <z type="button" class="round" id="btn-modal-close">&times;</z>
+            </div>
+        </z>
+    </div>
+</body>
+
+</html>
