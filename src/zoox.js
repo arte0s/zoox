@@ -85,7 +85,7 @@ const zoox = (() => {
             ? console.log(name, JSON.stringify(data.map(d => fields ? copy(d, fields) : d), null, C.TXT.TAB)) : null;
 
         return Object.freeze({
-            isBlock: e => e.tagName === C.ZX.BLOCK,
+            isBlock: e => e.tagName === C.ZX.BLOCK, //Place to add control
             isLazy: e => e.getAttribute('z-lazy') !== null,
             getBlocks: e => utils.toArray(e.getElementsByTagName(C.ZX.BLOCK)),
             getId: e => e.getAttribute(C.ATTR.ID),
@@ -149,33 +149,20 @@ const zoox = (() => {
             };
 
             //We go up to the first Z-tag and return its id
-            const getRealParentId = block => {
+            const getRealParentId = rElem => {
 
-                const el = getParent(block.parentElement);
+                const el = getParent(rElem.parentElement);
                 return el ? el.id : null;
             };
 
-            //Проверить, что компонент не принадлежит контролy с отложенной загрузкой 
-            const isLazy = block => {
-
-                while (block) {
-
-                    if (utils.isBlock(block) && utils.isLazy(block))
-                        return true;
-
-                    block = block.parentElement;
-                }
-            };
-
-            const create = (block) => Object.seal({
-                name: getTypeName(block),       //Имя типа дочернего контрола
-                id: utils.getId(block),         //Идентификатор компонента (уникальный только внутри родителя)
-                pId: getRealParentId(block),    //Real parent component id
-                lazy: isLazy(block),            //Is lazy init?
-                impl: getImpl(block)            //Имплементации расширений (спотов)
+            const create = (rElem) => Object.seal({
+                name: getTypeName(rElem),       //Имя типа дочернего контрола
+                id: utils.getId(rElem),         //Идентификатор компонента (уникальный только внутри родителя)
+                pId: getRealParentId(rElem),    //Real parent component id
+                impl: getImpl(rElem)            //Имплементации расширений (спотов)
             });
 
-            return (chArr, block) => chArr.push(create(block));
+            return (chArr, rElem) => chArr.push(create(rElem));
         })();
 
         const add = (() => {
@@ -295,8 +282,6 @@ const zoox = (() => {
             });
         };
 
-        const getIds = () => data.map(c => c.id);
-
         const log = () => {
 
             types.log();
@@ -357,7 +342,7 @@ const zoox = (() => {
                 let ch = getChildrenBySrc(id).find(c => c.cId === cId);
 
                 if (!ch)
-                    builder.createLazy(fn, cId, get(id)); //Lazy load
+                    builder.createLazy(fn, cId, get(id));
                 else if (fn)
                     fn(ch.zxBase);
             };
@@ -396,7 +381,6 @@ const zoox = (() => {
                     setInitHandler: fn => setInitHandler(id, fn),
                     setDisplayHandler: fn => setDisplayHandlerControl(id, fn),
                     setHideHandler: fn => setHideHandlerControl(id, fn),
-                    // setLangHandler: f => ..., <-- TODO!!!
                     create: (rElem, fn, tName, cId) => builder.create(id, rElem, fn, tName, cId),
                     copy: (sampleId, fn) => builder.copy(id, sampleId, fn)
                 };
@@ -404,23 +388,7 @@ const zoox = (() => {
         })();
 
         //////////////////////////////////////////////////////////////
-        const add = (() => {
-
-            const initControl = (id, fn) => {
-
-                getChildren(id).forEach(c => initControl(c.id)); //Load children
-
-                const control = get(id);
-
-                if (control.initFn)
-                    control.initFn();  //Переопределяется в конкретном контроле
-
-                if (!id) //После всех вызовов onInit()
-                    textBuilder.setLang();  //Задавать из вне
-
-                if (fn)
-                    fn(control.zxBase);
-            };
+        const init = (() => {
 
             const getParent = (type, pId, cId) => {
 
@@ -439,28 +407,81 @@ const zoox = (() => {
                 return pControl ? pControl.id : pId;
             };
 
+            const renewParent = (control, id) => {
+
+                control.pId = getParent(control.type, control.sId, control.cId);
+
+                getChildrenBySrc(id).forEach(c => renewParent(c, c.id));
+            };
+
+            const innerInit = (control) => {
+
+                getChildren(control.id).forEach(c => innerInit(c)); //Load children
+
+                // console.log('id: ', control.id);
+
+                if (control.initFn)
+                    control.initFn();  //Переопределяется в конкретном контроле
+            };
+
+            return (id, fn) => {
+
+                const control = get(id);
+
+                renewParent(control, id);
+
+                // console.table(data, ['id', 'pId', 'cId']);
+
+                innerInit(control, fn);
+
+                //После всех вызовов onInit()
+                textBuilder.setLang(null, id); //Задавать из вне
+
+                if (fn)
+                    fn(control.zxBase);
+            };
+        })();
+
+        //////////////////////////////////////////////////////////////
+        const add = (() => {
+
+            const isLazy = id => {
+
+                while (id) {
+
+                    let contr = get(id);
+                    if (utils.isLazy(contr.rootEl))
+                        return true;
+
+                    id = contr.pId;
+                }
+            };
+
             //////////////////////////////////////////////////////////////
-            return (rootEl, html, type, cId, id = null, pId) => {
+            return (type, html, rootEl, cId, pId, id = null) => {
 
                 const c = Object.seal({
                     type: type,
                     id,
-                    cId, //Идентификатор компонента 
-                    sId: pId, //Source parent ID (изначальный родительский ид.)
-                    pId: getParent(type, pId, cId),
+                    cId,        //Идентификатор компонента 
+                    sId: pId,   //Source parent ID (изначальный родительский ид.)
+                    pId: null,
                     rootEl,
                     html,
                     initFn: null,
                     displayFn: null,
                     hideFn: null,
-                    init: fn => initControl(id, fn),
+                    init: () => innerInit(id),
                     zxBase: createBase(id),
                     texts: [],
                     nodes: [],
-                    visible: false //Зависит от корневого элемента
+                    visible: false, //Зависит от корневого элемента
+                    lazy: null      //Зависит от корневого элемента или родительского инстанса
                 });
 
                 data.push(c);
+
+                c.lazy = isLazy(id);
 
                 if (type.onCreateFn) //Add custom functions
                     type.onCreateFn(c.zxBase);
@@ -476,8 +497,10 @@ const zoox = (() => {
             createId,
             add,
             get,
+            getChildren: id => getChildren(id),
+            getByComp: (pId, cId) => getChildrenBySrc(pId).find(c => c.cId === cId),
             getTextData,
-            getIds,
+            init,
             log
         });
     })();
@@ -575,14 +598,24 @@ const zoox = (() => {
             n.el.nodeValue = text;
         };
 
-        const fillText = (n, texts) => texts.forEach((t, i) => renewText(n, t, i));
+        const fillText = (cTexts, n) => {
 
-        const getTexts = (texts, nTexts) => texts.filter(t => t.lang === lang && nTexts.find(nt => nt === t.id));
+            const texts = getTexts(cTexts, n.texts);
+            texts.forEach((t, i) => renewText(n, t, i));
+        };
+
+        const getTexts = (texts, nTexts) => {
+
+            return texts.filter(t => t.lang === lang && nTexts.find(nt => nt === t.id));
+        };
 
         const fill = id => {
 
+            //Рекурсивно обойдём всех потомков
+            inst.getChildren(id).forEach(c => fill(c.id));
+
             const c = inst.getTextData(id);
-            c.nodes.forEach(n => fillText(n, getTexts(c.texts, n.texts)));
+            c.nodes.forEach(n => fillText(c.texts, n));
         };
 
         //////////////////////////////////////////////////////////////
@@ -590,19 +623,17 @@ const zoox = (() => {
             langs = ll;
         };
 
-        const setLang = l => {
-
-            //Return, if initial language is already set
-            if (!l && lang)
-                return;
+        const setLang = (l, id) => {
 
             if (l && !langs.find(lang => lang === l))
                 throw new Error('Language "' + l + '" is unknown');
 
-            if (l)
-                lang = l;
+            lang = l || langs[0];
 
-            inst.getIds().forEach(id => fill(id));
+            if (!lang)
+                throw new Error('Language is undefined!');
+
+            fill(id);
         };
 
         return {
@@ -675,7 +706,7 @@ const zoox = (() => {
         //-----------------------------------------------------------
         //  Создаём инстанс заданного контрола
         //-----------------------------------------------------------        
-        const createInstance = (() => {
+        const createInst = (() => {
 
             const slotImplInner = (slot, content, id) => {
 
@@ -712,88 +743,97 @@ const zoox = (() => {
             };
 
             //////////////////////////////////////////////////////////////
-            const createHTML = (tHTML, cId, pChildren, rElem, newId, stControl) => {
+            const createHTML = (tHTML, comp, newId, dynamic) => {
 
                 const html = tHTML.cloneNode(true);
 
                 //Добавляем impl в соответствующий slot
-                if (stControl)
-                    pChildren.find(c => c.id === cId)
-                        .impl.forEach(i => slotImpliment(i.id, html, rElem, newId));
+                if (!dynamic) //!!!Для динамиеского контрола в типе никакой информации нет!!!
+                    comp.pContr.type.children.find(c => c.id === comp.cId)
+                        .impl.forEach(i => slotImpliment(i.id, html, comp.rElem, newId));
 
                 //Move class atrribute from "Z" tag to root element
-                utils.toArray(rElem.classList).forEach(c => {
-                    rElem.classList.remove(c);
+                utils.toArray(comp.rElem.classList).forEach(c => {
+                    comp.rElem.classList.remove(c);
                     html.classList.add(c);
                 });
 
-                rElem.appendChild(html); //Для построения HTML-дерева, все контролы изначально видны
+                comp.rElem.appendChild(html); //Для построения HTML-дерева, все контролы изначально видны
 
                 return html;
             };
 
             //////////////////////////////////////////////////////////////
-            const onInitEnd = (cnt, dyn, contr) => {
+            const getParent = cnt => {
 
-                if (!dyn) {
+                const pContr = cnt.getRoot();
+                const cId = cnt.getComp();
 
+                return cId ? inst.getByComp(pContr.id, cId) : pContr;
+            };
+
+            //////////////////////////////////////////////////////////////
+            const onInitEnd = (counter) => {
+
+                const rId = getParent(counter).id;
+
+                //Чтобы сократить лог, оставляем корень или отложенную инициализацию (без динамики)
+                const noDyn = !rId || counter.isLazyLoad();
+
+                if (noDyn) {
                     inst.log();
                     console.time('onInitEnd');
                 }
 
-                const rControl = dyn ? contr : inst.get();
+                inst.init(rId, counter.onEnd);
 
-                rControl.init(cnt.onInitEnd);
-
-                if (!dyn)
+                if (noDyn)
                     console.timeEnd('onInitEnd');
             };
 
             //////////////////////////////////////////////////////////////
-            const createEnd = (type, counter, cId, pType, pId, dynamic, lazyLoad, rElem) => {
+            const createEnd = (type, counter, comp, dynamic) => {
 
-                const newId = inst.createId(cId);
+                const newId = inst.createId(comp.cId);
 
                 //Renew attribut value in root control
-                rElem.setAttribute(C.ATTR.ID, newId);
+                comp.rElem.setAttribute(C.ATTR.ID, newId);
 
                 //Add CSS (for first control) by default
                 types.display(type.name);
 
-                if (lazyLoad && rElem.style.display)
-                    rElem.style.display = '';
+                if (counter.isLazyLoad() && comp.rElem.style.display)
+                    comp.rElem.style.display = '';
 
                 //Create HTML-markup
-                const html = createHTML(type.html, cId, pType.children, rElem, newId, !dynamic);
+                const html = createHTML(type.html, comp, newId, dynamic);
 
                 //Create new instanse and get his id
-                const newControl = inst.add(rElem, html, type, cId, newId, pId);
+                const newControl = inst.add(type, html, comp.rElem, comp.cId, comp.pContr.id, newId);
 
-                //Recursively initialize child elements of type
-                createChild(counter, newControl, lazyLoad);
-
-                counter.incInit();
-
-                //On initialization end
-                if (counter.isInitEnd())
-                    onInitEnd(counter, dynamic || lazyLoad, newControl);
+                //Тут нужен не текущий родитель (comp.pContr), а первоначальный (rContr) 
+                //с которым вызывался первый createNew
+                if (!createNew(counter, newControl))
+                    onInitEnd(counter);
             };
 
             //////////////////////////////////////////////////////////////
-            const isLazy = (chArr, cId) => {
+            const getCounter = (rContr, cId, fn, lazyLoad) => {
 
-                if (chArr.length > 1 && !cId)
-                    throw new Error('Attribute `ID` for control doesn\'t set!');
+                let comp = [];
 
-                //The dynamic component will be absent here 
-                const comp = chArr.find(c => c.id === cId);
-
-                if (comp && comp.lazy)
-                    return true;
+                return Object.freeze({
+                    addAll: cc => cc.forEach(c => comp.push(c)),
+                    pop: () => comp.pop(),
+                    isLazyLoad: () => lazyLoad,
+                    getRoot: () => rContr,
+                    getComp: () => cId,
+                    onEnd: zxBase => { if (fn) fn(zxBase) }
+                });
             };
 
             //////////////////////////////////////////////////////////////
-            const getRoot = (rHTML, cId) => {
+            const getRootElement = (rHTML, cId) => {
 
                 const rElem = utils.isBlock(rHTML) && (rHTML.id === cId || !cId)
                     ? rHTML : !cId
@@ -807,73 +847,72 @@ const zoox = (() => {
             };
 
             //////////////////////////////////////////////////////////////
-            const create = (counter, cId, rContr, tName, lazyLoad, rElem) => {
+            const addCh = (compId, pContr, children, counter) => {
 
-                counter.incFound();
+                const rElem = getRootElement(pContr.html, compId);
 
-                const endFn = type => createEnd(type, counter, cId, rContr.type, rContr.id, !!tName, lazyLoad, rElem);
+                //Проверим что создаваемый инстанс ещё не создан
+                if (inst.getByComp(pContr.id, compId))
+                    return; //Error?
 
-                const name = tName || types.getChildName(rContr.type.name, cId);
+                if (!rElem)
+                    return;
 
-                //Find type
-                const type = types.get(name);
+                const lazy = utils.isLazy(rElem);
+                const lazyLoad = counter.isLazyLoad();
+                const rootContr = getParent(counter);
+                const rootLazy = rootContr ? rootContr.lazy : false;
 
-                if (type)
-                    endFn(type); //Call callback function immediately 
-                else
-                    loadType(name, endFn); //Add handler to the list & start loading for first handler
+                //Если не ленивая инциализация, а текущий комопнент ленивый скроем его содержимое
+                if (!lazyLoad && lazy)
+                    rElem.style.display = 'none';
+
+                if ((lazyLoad && (rootLazy || lazy)) || (!lazyLoad && !rootLazy && !lazy))
+                    children.push(Object.freeze({ pContr, rElem, cId: compId }));
             };
 
             //////////////////////////////////////////////////////////////
-            return (counter, cId, rContr, tName, lazyLoad) => {
+            const createNew = (counter, pContr, cId, tName) => {
 
-                //Find root element for control addition
-                const rElem = getRoot(rContr.html, cId);
+                const ch = cId ? [cId] : pContr.type.children.map(c => c.id);
 
-                //For lazy initialization
-                if (!lazyLoad && isLazy(rContr.type.children, cId)) {
+                const children = [];
+                ch.forEach(id => addCh(id, pContr, children, counter));
+                counter.addAll(children);
 
-                    if (utils.isLazy(rElem)) //Только если ленивый сам контрол, а не потомок ленивого 
-                        rElem.style.display = 'none';
+                const comp = counter.pop();
 
-                } else
-                    create(counter, cId, rContr, tName, lazyLoad, rElem);
+                if (comp) {
+
+                    const endFn = type => createEnd(type, counter, comp, !!tName);
+
+                    const name = tName || types.getChildName(comp.pContr.type.name, comp.cId);
+
+                    const type = types.get(name);
+
+                    if (type)
+                        endFn(type); //Call callback function immediately 
+                    else
+                        loadType(name, endFn); //Add handler to the list & start loading for first handler
+                }
+
+                return !!comp;
             };
+
+            //////////////////////////////////////////////////////////////
+            return (pContr, fn, cId, tName, lazyLoad) =>
+                createNew(getCounter(pContr, cId, fn, lazyLoad), pContr, cId, tName);
         })();
 
-        const createChild = (cnt, ctrl, lazyLoad) => {
+        //-----------------------------------------------------------
+        //  Остальные функции Builder-а
+        //----------------------------------------------------------- 
+        const createRootElement = (rElem, tName, cId) => {
 
-            const rContr = lazyLoad ? inst.get(ctrl.pId) : ctrl;
-
-            const chArr = lazyLoad
-                ? rContr.type.children.filter(c => c.pId == ctrl.cId)
-                : rContr.type.children;
-
-            chArr.forEach(comp => createInstance(cnt, comp.id, rContr, null, lazyLoad));
-        };
-
-        //////////////////////////////////////////////////////////////
-        const getCounter = (fn) => {
-
-            let found = 0,
-                init = 0,
-                onInitEndFn = fn;
-
-            return Object.freeze({
-                incFound: () => found++,
-                incInit: () => init++,
-                isInitEnd: () => found === init,
-                onInitEnd: zxBase => { if (onInitEndFn) onInitEndFn(zxBase) }
-            });
-        };
-
-        //////////////////////////////////////////////////////////////
-        const createBlock = (rElem, tName, cId) => {
-
-            const block = document.createElement(C.ZX.BLOCK);
-            block.setAttribute("type", tName);
-            block.setAttribute(C.ATTR.ID, cId);
-            rElem.appendChild(block);
+            const newElem = document.createElement(C.ZX.BLOCK);
+            newElem.setAttribute("type", tName);
+            newElem.setAttribute(C.ATTR.ID, cId);
+            rElem.appendChild(newElem);
         };
 
         //////////////////////////////////////////////////////////////
@@ -889,13 +928,15 @@ const zoox = (() => {
             //else
             //  check(cId);
 
-            //Create block element
-            createBlock(rElem, tName, cId);
+            createRootElement(rElem, tName, cId);
 
-            createInstance(getCounter(fn), cId, rContr, tName);
+            createInst(rContr, fn, cId, tName);
         };
 
-        const createLazy = (fn, cId, rContr) => createInstance(getCounter(fn), cId, rContr, null, true);
+        const createLazy = (fn, cId, rContr) => {
+
+            createInst(rContr, fn, cId, null, true);
+        };
 
         const copy = (rId, sampleId, fn) => {
 
@@ -930,11 +971,12 @@ const zoox = (() => {
             //Create type right now to prevent try of load it
             const rType = types.add(document.body, null, zxBase => zxBase.setInitHandler(() => s.init(zxBase)));
 
-            const rContr = inst.add(document.body.parentElement, document.body, rType);
+            const rContr = inst.add(rType, document.body, document.body.parentElement);
 
-            createChild(getCounter(), rContr);
+            createInst(rContr);
         });
 
+        //////////////////////////////////////////////////////////////
         let path;
 
         return Object.freeze({
