@@ -445,17 +445,22 @@ const zoox = (() => {
         //////////////////////////////////////////////////////////////
         const add = (() => {
 
-            const isLazy = id => {
+            /////////////////////////////////////////////////////////////
+            // TODO: Сейчас при линивой инициализации главного контрола, 
+            // безусловно загружается все дочерние контролы. Так быть не 
+            // должно!!!
+            // /////////////////////////////////////////////////////////////
+            // const isLazy = id => {
 
-                while (id) {
+            //     while (id) {
 
-                    let contr = get(id);
-                    if (utils.isLazy(contr.rootEl))
-                        return true;
+            //         let contr = get(id);
+            //         if (utils.isLazy(contr.rootEl))
+            //             return true;
 
-                    id = contr.pId;
-                }
-            };
+            //         id = contr.pId;
+            //     }
+            // };
 
             //////////////////////////////////////////////////////////////
             return (type, html, rootEl, cId, pId, id = null) => {
@@ -481,7 +486,7 @@ const zoox = (() => {
 
                 data.push(c);
 
-                c.lazy = isLazy(id);
+                // c.lazy = isLazy(id);
 
                 if (type.onCreateFn) //Add custom functions
                     type.onCreateFn(c.zxBase);
@@ -764,18 +769,9 @@ const zoox = (() => {
             };
 
             //////////////////////////////////////////////////////////////
-            const getParent = cnt => {
-
-                const pContr = cnt.getRoot();
-                const cId = cnt.getComp();
-
-                return cId ? inst.getByComp(pContr.id, cId) : pContr;
-            };
-
-            //////////////////////////////////////////////////////////////
             const onInitEnd = (counter) => {
 
-                const rId = getParent(counter).id;
+                const rId = counter.getParent().id //getParent(counter).id;
 
                 //Чтобы сократить лог, оставляем корень или отложенную инициализацию (без динамики)
                 const noDyn = !rId || counter.isLazyLoad();
@@ -802,14 +798,17 @@ const zoox = (() => {
                 //Add CSS (for first control) by default
                 types.display(type.name);
 
-                if (counter.isLazyLoad() && comp.rElem.style.display)
-                    comp.rElem.style.display = '';
-
                 //Create HTML-markup
                 const html = createHTML(type.html, comp, newId, dynamic);
 
                 //Create new instanse and get his id
                 const newControl = inst.add(type, html, comp.rElem, comp.cId, comp.pContr.id, newId);
+
+                if (counter.isLazyLoad() && comp.rElem.style.display) {
+
+                    newControl.zxBase.hide();
+                    comp.rElem.style.display = '';
+                };
 
                 //Тут нужен не текущий родитель (comp.pContr), а первоначальный (rContr) 
                 //с которым вызывался первый createNew
@@ -828,6 +827,7 @@ const zoox = (() => {
                     isLazyLoad: () => lazyLoad,
                     getRoot: () => rContr,
                     getComp: () => cId,
+                    getParent: () => cId ? inst.getByComp(rContr.id, cId) : rContr,
                     onEnd: zxBase => { if (fn) fn(zxBase) }
                 });
             };
@@ -846,29 +846,47 @@ const zoox = (() => {
                 return rElem;
             };
 
-            //////////////////////////////////////////////////////////////
-            const addCh = (compId, pContr, children, counter) => {
+            /////////////////////////////////////////////////////////////
+            const isLazy = id => {
 
-                const rElem = getRootElement(pContr.html, compId);
+                while (id) {
+
+                    let contr = inst.get(id);
+                    if (utils.isLazy(contr.rootEl))
+                        return true;
+
+                    id = contr.pId;
+                }
+            };
+
+            //////////////////////////////////////////////////////////////
+            const addCh = (cId, pContr, children, counter) => {
 
                 //Проверим что создаваемый инстанс ещё не создан
-                if (inst.getByComp(pContr.id, compId))
-                    return; //Error?
+                if (inst.getByComp(pContr.id, cId))
+                    throw new Error('Control is already created! pId: ', pContr.id + ', cId: ' + cId);
+
+                const rElem = getRootElement(pContr.html, cId);
 
                 if (!rElem)
-                    return;
+                    throw new Error('Root HTML-element undefined! pId: ', pContr.id + ', cId: ' + cId);
 
-                const lazy = utils.isLazy(rElem);
                 const lazyLoad = counter.isLazyLoad();
-                const rootContr = getParent(counter);
-                const rootLazy = rootContr ? rootContr.lazy : false;
 
-                //Если не ленивая инциализация, а текущий комопнент ленивый скроем его содержимое
+                const rootContr = counter.getParent();
+                const rootLazy = rootContr ? isLazy(rootContr.id) : false; //Root control lazy?
+
+                const lazy = utils.isLazy(rElem); //Is current control lazy?
+
+                //Если не ленивая инциализация, а текущий компонент ленивый скроем его содержимое
                 if (!lazyLoad && lazy)
                     rElem.style.display = 'none';
 
-                if ((lazyLoad && (rootLazy || lazy)) || (!lazyLoad && !rootLazy && !lazy))
-                    children.push(Object.freeze({ pContr, rElem, cId: compId }));
+                if ((lazyLoad && (
+                    (rootLazy && !lazy) //Загружаем ТОЛЬКО НЕ ЛЕНИВЫЕ дочерние компоненты
+                    || counter.getComp() === cId) //Или дочерний компонент указанный явно (первый при загрузке)
+                ) || (!lazyLoad && !rootLazy && !lazy))
+                    children.push(Object.freeze({ pContr, rElem, cId }));
             };
 
             //////////////////////////////////////////////////////////////
@@ -900,8 +918,12 @@ const zoox = (() => {
             };
 
             //////////////////////////////////////////////////////////////
-            return (pContr, fn, cId, tName, lazyLoad) =>
+            return (pContr, fn, cId, tName, lazyLoad) => {
+
+                //TODO: Запустим лоадер... (предусматреть его настройку)
+                
                 createNew(getCounter(pContr, cId, fn, lazyLoad), pContr, cId, tName);
+            };
         })();
 
         //-----------------------------------------------------------
@@ -925,8 +947,6 @@ const zoox = (() => {
                 cId = types.getcId(rContr.type);
 
             //TODO: Проверить уникальность localId в пределах родительского типа
-            //else
-            //  check(cId);
 
             createRootElement(rElem, tName, cId);
 
@@ -942,10 +962,6 @@ const zoox = (() => {
 
             const smp = inst.get(sampleId);
             create(rId, smp.rootEl.parentElement, fn, smp.type.name);
-        };
-
-        const massCopy = (sample, fn) => {
-            //...
         };
 
         const free = () => {
@@ -984,7 +1000,6 @@ const zoox = (() => {
             create,
             createLazy,
             copy,
-            massCopy,
             free
         });
     })();
