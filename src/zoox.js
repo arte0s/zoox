@@ -34,7 +34,7 @@ const zoox = (() => {
             SLOT: 'Z-SLOT',
             IMPL: 'z-impl'
         }),
-        DB: Object.freeze({
+        DEBUG: Object.freeze({
             NONE: 'none',
             ALL: 'all'
         }),
@@ -81,7 +81,7 @@ const zoox = (() => {
             return r;
         };
 
-        const log = (name, data, fields) => debugMode == C.DB.ALL || debugMode == name
+        const log = (name, data, fields) => debugMode == C.DEBUG.ALL || debugMode == name
             ? console.log(name, JSON.stringify(data.map(d => fields ? copy(d, fields) : d), null, C.TXT.TAB)) : null;
 
         return Object.freeze({
@@ -269,6 +269,8 @@ const zoox = (() => {
         //Get children by source id (where the control was declared) 
         const getChildrenBySrc = id => data.filter(d => d.sId === id);
 
+        const isRoot = id => !id; //Технический корневой контрол (BODY). Может быть только один!
+
         const createId = cId => cId + '-' + count++;
 
         const getTextData = id => {
@@ -365,7 +367,7 @@ const zoox = (() => {
             //////////////////////////////////////////////////////////////
             return (id) => {
 
-                if (id !== null)
+                if (id !== null) //To prevent undefined value
                     utils.checks.oblig(id);
 
                 return {
@@ -390,10 +392,10 @@ const zoox = (() => {
         //////////////////////////////////////////////////////////////
         const init = (() => {
 
-            const getParent = (type, pId, cId) => {
+            const getParent = (id, pId, cId) => {
 
                 //Root control doesn't have parent
-                if (!type.name)
+                if (isRoot(id))
                     return pId;
 
                 const chArr = get(pId).type.children;
@@ -409,7 +411,7 @@ const zoox = (() => {
 
             const renewParent = (control, id) => {
 
-                control.pId = getParent(control.type, control.sId, control.cId);
+                control.pId = getParent(control.id, control.sId, control.cId);
 
                 getChildrenBySrc(id).forEach(c => renewParent(c, c.id));
             };
@@ -418,8 +420,6 @@ const zoox = (() => {
 
                 getChildren(control.id).forEach(c => innerInit(c)); //Load children
 
-                // console.log('id: ', control.id);
-
                 if (control.initFn)
                     control.initFn();  //Переопределяется в конкретном контроле
             };
@@ -427,11 +427,7 @@ const zoox = (() => {
             return (id, fn) => {
 
                 const control = get(id);
-
                 renewParent(control, id);
-
-                // console.table(data, ['id', 'pId', 'cId']);
-
                 innerInit(control, fn);
 
                 //После всех вызовов onInit()
@@ -443,62 +439,39 @@ const zoox = (() => {
         })();
 
         //////////////////////////////////////////////////////////////
-        const add = (() => {
+        const add = (type, html, rootEl, cId, pId, id = null) => {
 
-            /////////////////////////////////////////////////////////////
-            // TODO: Сейчас при линивой инициализации главного контрола, 
-            // безусловно загружается все дочерние контролы. Так быть не 
-            // должно!!!
-            // /////////////////////////////////////////////////////////////
-            // const isLazy = id => {
+            const c = Object.seal({
+                type: type,
+                id,
+                cId,        //Идентификатор компонента 
+                sId: pId,   //Source parent ID (изначальный родительский ид.)
+                pId: null,
+                rootEl,
+                html,
+                initFn: null,
+                displayFn: null,
+                hideFn: null,
+                init: () => innerInit(id),
+                zxBase: createBase(id),
+                texts: [],
+                nodes: [],
+                visible: false, //Зависит от корневого элемента
+            });
 
-            //     while (id) {
+            data.push(c);
 
-            //         let contr = get(id);
-            //         if (utils.isLazy(contr.rootEl))
-            //             return true;
+            if (type.onCreateFn) //Add custom functions
+                type.onCreateFn(c.zxBase);
 
-            //         id = contr.pId;
-            //     }
-            // };
+            c.zxBase = Object.freeze(c.zxBase);
 
-            //////////////////////////////////////////////////////////////
-            return (type, html, rootEl, cId, pId, id = null) => {
-
-                const c = Object.seal({
-                    type: type,
-                    id,
-                    cId,        //Идентификатор компонента 
-                    sId: pId,   //Source parent ID (изначальный родительский ид.)
-                    pId: null,
-                    rootEl,
-                    html,
-                    initFn: null,
-                    displayFn: null,
-                    hideFn: null,
-                    init: () => innerInit(id),
-                    zxBase: createBase(id),
-                    texts: [],
-                    nodes: [],
-                    visible: false, //Зависит от корневого элемента
-                    lazy: null      //Зависит от корневого элемента или родительского инстанса
-                });
-
-                data.push(c);
-
-                // c.lazy = isLazy(id);
-
-                if (type.onCreateFn) //Add custom functions
-                    type.onCreateFn(c.zxBase);
-
-                c.zxBase = Object.freeze(c.zxBase);
-
-                return c;
-            }
-        })();
+            return c;
+        };
 
         //////////////////////////////////////////////////////////////
         return Object.freeze({
+            isRoot,
             createId,
             add,
             get,
@@ -506,7 +479,7 @@ const zoox = (() => {
             getByComp: (pId, cId) => getChildrenBySrc(pId).find(c => c.cId === cId),
             getTextData,
             init,
-            log
+            log,
         });
     })();
 
@@ -771,17 +744,27 @@ const zoox = (() => {
             //////////////////////////////////////////////////////////////
             const onInitEnd = (counter) => {
 
-                const rId = counter.getParent().id //getParent(counter).id;
+                const rContr = counter.getParent();
+                const root = inst.isRoot(rContr.id);
 
                 //Чтобы сократить лог, оставляем корень или отложенную инициализацию (без динамики)
-                const noDyn = !rId || counter.isLazyLoad();
+                const noDyn = root || counter.isLazyLoad();
 
                 if (noDyn) {
                     inst.log();
                     console.time('onInitEnd');
                 }
 
-                inst.init(rId, counter.onEnd);
+                inst.init(rContr.id, counter.onEnd);
+
+                //Hide loader
+                if (loader)
+                    loader.style.display = 'none';
+
+                if (!root) //Если обычный контрол, то отобразим его самого
+                    rContr.rootEl.style.display = '';
+                else //Eсли контрол BODY, то отобразим его дочерние контролы
+                    inst.getChildren(rContr.id).forEach(c => c.rootEl.style.display = '');
 
                 if (noDyn)
                     console.timeEnd('onInitEnd');
@@ -803,12 +786,6 @@ const zoox = (() => {
 
                 //Create new instanse and get his id
                 const newControl = inst.add(type, html, comp.rElem, comp.cId, comp.pContr.id, newId);
-
-                if (counter.isLazyLoad() && comp.rElem.style.display) {
-
-                    newControl.zxBase.hide();
-                    comp.rElem.style.display = '';
-                };
 
                 //Тут нужен не текущий родитель (comp.pContr), а первоначальный (rContr) 
                 //с которым вызывался первый createNew
@@ -878,7 +855,7 @@ const zoox = (() => {
 
                 const lazy = utils.isLazy(rElem); //Is current control lazy?
 
-                //Если не ленивая инциализация, а текущий компонент ленивый скроем его содержимое
+                //При обычной инициалиазции скрываем содержимое ленивых компонентов
                 if (!lazyLoad && lazy)
                     rElem.style.display = 'none';
 
@@ -920,8 +897,10 @@ const zoox = (() => {
             //////////////////////////////////////////////////////////////
             return (pContr, fn, cId, tName, lazyLoad) => {
 
-                //TODO: Запустим лоадер... (предусматреть его настройку)
-                
+                //Display loader
+                if (loader)
+                    loader.style.display = '';
+
                 createNew(getCounter(pContr, cId, fn, lazyLoad), pContr, cId, tName);
             };
         })();
@@ -981,8 +960,9 @@ const zoox = (() => {
         const init = s => window.addEventListener('load', () => {
 
             path = getPath(s.path);
-            utils.setDebugMode(s.debug ? s.debug : C.DB.NONE);
+            utils.setDebugMode(s.debug ? s.debug : C.DEBUG.NONE);
             textBuilder.setLangs(s.langs ? s.langs : ['en']);
+            loader = s.loader ? s.loader() : null;
 
             //Create type right now to prevent try of load it
             const rType = types.add(document.body, null, zxBase => zxBase.setInitHandler(() => s.init(zxBase)));
@@ -993,7 +973,7 @@ const zoox = (() => {
         });
 
         //////////////////////////////////////////////////////////////
-        let path;
+        let path, loader;
 
         return Object.freeze({
             init,
@@ -1008,7 +988,7 @@ const zoox = (() => {
     //  IV. Return
     //-----------------------------------------------------------
     return Object.freeze({
-        DB: C.DB,
+        DEBUG: C.DEBUG,
         init: builder.init,
         utils: Object.freeze({ toArray: utils.toArray }),
         setLang: textBuilder.setLang,
