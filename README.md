@@ -12,6 +12,7 @@
 - [Lazy init demo](https://arte0s.github.io/zoox/demo/test-lazy-init.html)
 - [Checkboxes demo](https://arte0s.github.io/zoox/demo/test-checkbox.html)
 - [Modal window demo](https://arte0s.github.io/zoox/demo/test-modal.html)
+- [Gradual list loading demo](https://arte0s.github.io/zoox/demo/test-list-endless.html)
 
 ## Goals & Features
 
