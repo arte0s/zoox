@@ -7,6 +7,14 @@
 
     <link rel="stylesheet" type="text/css" href="css/demo.css">
 
+    <style>
+        .container {
+            width: 200px;
+            height: 400px;
+            border: 1px solid black;
+        }
+    </style>
+
     <script src="../src/zoox.js"></script>
 
     <script>
@@ -38,9 +46,11 @@
 </head>
 
 <body class="schema-light">
-    <z type="list-endless" id="list-control">
-        <z type="button" id="button-control">Button 1</z>
-    </z>
+    <div class="container">
+        <z type="list" id="list-control">
+            <z type="button" id="button-control">Button 1</z>
+        </z>
+    </div>
 </body>
 
 </html>

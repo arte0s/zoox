@@ -32,25 +32,26 @@
 
         /* Track */
         ::-webkit-scrollbar-track {
-            background: var(--main-body);
+            background: var(--clr-bground);
         }
 
         /* Handle */
         ::-webkit-scrollbar-thumb {
-            background: var(--main-button);
+            background: var(--clr-btn-norm);
         }
     </style>
 
     <script>
         const items = [];
+        const partSize = 20;
+        const deltaSize = 5; //Bottom marging of list + border must be < 5px !!!
 
-        //TODO: Сейчас вызывается только один раз! Сделать возможность удаления старого контента
-        //Чтобы обновить инфу (без удаления старого), вызывающая функция должна заполмнить связку 
-        //data<->item, и при изменении data, обновлять соответсвующий item
-        zxBase.setContent = (dataArr, fillFn) => {
+        let data = [];
+        let fillFn;
+        let currIndex = 1;
+        let sampleElem;
 
-            const sample = zxBase.getAll()[0];
-            sample.hide();
+        let loadPart = () => {
 
             const getItemFunc = (data, ind) => item => {
 
@@ -58,8 +59,53 @@
                 fillFn(data, ind, item);
             };
 
-            dataArr.forEach((elem, ind) => zxBase.copy(sample.getId(), getItemFunc(elem, ind)));
+            for (let i = 0; i < partSize; i++)
+                if (currIndex < data.length)
+                    zxBase.copy(sampleElem.getId(), getItemFunc(data[currIndex++], currIndex));
         };
+
+        zxBase.setInitHandler(() => {
+
+            //Detect when scrolled to bottom
+            const rElem = zxBase.getHTML().children[1];
+
+            rElem.addEventListener('scroll', () => {
+
+                if (rElem.scrollTop + rElem.clientHeight > rElem.scrollHeight - deltaSize)
+                    loadPart();
+            });
+        });
+
+        zxBase.setContent = (dt, fn) => {
+
+            fillFn = fn;
+            data = dt;
+
+            //Initially load some
+            sampleElem = zxBase.getAll()[0];
+            sampleElem.hide();
+
+            loadPart();
+        };
+
+        /*        const items = [];
+
+                //TODO: Сейчас вызывается только один раз! Сделать возможность удаления старого контента
+                //Чтобы обновить инфу (без удаления старого), вызывающая функция должна заполмнить связку 
+                //data<->item, и при изменении data, обновлять соответсвующий item
+                zxBase.setContent = (dataArr, fillFn) => {
+
+                    const sample = zxBase.getAll()[0];
+                    sample.hide();
+
+                    const getItemFunc = (data, ind) => item => {
+
+                        items.push(item);
+                        fillFn(data, ind, item);
+                    };
+
+                    dataArr.forEach((elem, ind) => zxBase.copy(sample.getId(), getItemFunc(elem, ind)));
+                }; */
     </script>
 </head>
 
