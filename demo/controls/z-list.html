@@ -48,31 +48,31 @@
 
         let data = [];
         let fillFn;
-        let currIndex = 1;
+        let indexFrom = 0;
+        let indexTo = 0;
         let sampleElem;
 
-        let loadPart = () => {
+        const getItemFunc = (data, ind) => item => {
 
-            const getItemFunc = (data, ind) => item => {
+            items.push(item);
+            fillFn(data, ind, item);
+        };
 
-                items.push(item);
-                fillFn(data, ind, item);
-            };
+        const load = () => {
 
             for (let i = 0; i < partSize; i++)
-                if (currIndex < data.length)
-                    zxBase.copy(sampleElem.getId(), getItemFunc(data[currIndex++], currIndex));
+                if (indexTo < data.length)
+                    zxBase.copy(sampleElem.getId(), getItemFunc(data[indexTo++], indexTo));
         };
 
         zxBase.setInitHandler(() => {
 
-            //Detect when scrolled to bottom
             const rElem = zxBase.getHTML().children[1];
 
             rElem.addEventListener('scroll', () => {
 
                 if (rElem.scrollTop + rElem.clientHeight > rElem.scrollHeight - deltaSize)
-                    loadPart();
+                    load();
             });
         });
 
@@ -81,11 +81,10 @@
             fillFn = fn;
             data = dt;
 
-            //Initially load some
             sampleElem = zxBase.getAll()[0];
             sampleElem.hide();
 
-            loadPart();
+            load();
         };
 
         /*        const items = [];
