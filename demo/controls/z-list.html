@@ -49,8 +49,8 @@
         const content = [];
 
         let fillFn;
-        let loadedFrom = 0;
-        let loadedTo = -1;
+        let loadedFrom;
+        let loadedTo;
         let sampleElem;
 
         const getItemFunc = (cn, ind) => zxContr => {
@@ -87,7 +87,6 @@
 
             for (let i = fr; i <= to; i++) {
 
-                //TODO: Надо удалять все дочерние контролы!
                 content[i].item.get().free();
                 content[i].item.set(null);
             }
@@ -137,7 +136,24 @@
             log('UP');
         };
 
+        const init = () => {
+
+            if (loadedTo >= 0)
+                freePart(loadedFrom, loadedTo);
+
+            loadedFrom = 0;
+            loadedTo = -1;
+
+            if (content)
+                content.length = 0;
+        };
+
         zxBase.setInitHandler(() => {
+
+            init();
+
+            sampleElem = zxBase.getAll()[0];
+            sampleElem.hide();
 
             const rElem = zxBase.getHTML().children[1];
 
@@ -165,13 +181,8 @@
         zxBase.setContent = (dt, fn) => {
 
             fillFn = fn;
-
-            content.length = 0;
+            init();
             dt.forEach((d, i) => content.push(createItem(i, d)));
-
-            sampleElem = zxBase.getAll()[0];
-            sampleElem.hide();
-
             loadDown(maxLoaded);
         };
 

@@ -378,8 +378,8 @@ const zoox = (() => {
                 if (!contr)
                     throw new Error('Control with id "' + id + '" not found!');
 
-                if (contr.visible === true)
-                    contr.zxBase.hide(); //Remove control from DOM
+                // if (contr.visible === true)
+                contr.zxBase.hide(); //Remove control from DOM
 
                 const i = data.findIndex(c => c.id === id);
 
