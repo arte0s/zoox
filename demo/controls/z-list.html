@@ -42,27 +42,103 @@
     </style>
 
     <script>
-        const items = [];
-        const partSize = 20;
-        const deltaSize = 5; //Bottom marging of list + border must be < 5px !!!
+        //TODO: Сейчас вызывается только один раз! Сделать возможность удаления старого контента
+        //Чтобы обновить инфу (без удаления старого), вызывающая функция должна заполмнить связку 
+        //data<->item, и при изменении data, обновлять соответсвующий item
 
-        let data = [];
+        const partSize = 25;
+        const sizeRatio = 4;
+        const deltaSize = 500; //Bottom marging of list + border must be < deltaSize
+
+        const items = [];
+
         let fillFn;
-        let indexFrom = 0;
-        let indexTo = 0;
+        let loadedFrom = 0;
+        let loadedTo = -1;
         let sampleElem;
 
-        const getItemFunc = (data, ind) => item => {
+        const getItemFunc = (item, ind) => zxContr => {
 
-            items.push(item);
-            fillFn(data, ind, item);
+            item.zxContr = zxContr;
+            fillFn(item.data, ind, zxContr);
         };
 
-        const load = () => {
+        const normalize = p => p < 0 ? 0 :
+            p > items.length - 1 ? items.length - 1 : p;
 
-            for (let i = 0; i < partSize; i++)
-                if (indexTo < data.length)
-                    zxBase.copy(sampleElem.getId(), getItemFunc(data[indexTo++], indexTo));
+        const createPart = (fr, to, pos) => {
+
+            console.log('[CREATE] fr: ', fr, ' to: ', to);
+
+            fr = normalize(fr);
+            to = normalize(to);
+
+            for (let i = fr; i <= to; i++)
+                zxBase.copy(sampleElem.getId(), getItemFunc(items[i], i), pos++);
+
+            if (to > loadedTo)
+                loadedTo = to;
+            else
+                loadedFrom = fr;
+        };
+
+        const freePart = (fr, to) => {
+
+            console.log('[FREE]   fr: ', fr, ' to: ', to);
+
+            fr = normalize(fr);
+            to = normalize(to);
+
+            for (let i = fr; i <= to; i++) {
+
+                //TODO: Надо удалять все дочерние контролы!
+                items[i].zxContr.free();
+                items[i].zxContr = null;
+            }
+
+            if (fr === loadedFrom)
+                loadedFrom = to + 1;
+            else
+                loadedTo = fr - 1;
+        };
+
+        const isMaxExceeded = () => items.filter(it => !!it.zxContr).length > partSize * sizeRatio;
+
+        const log = direct => console.log('[' + direct + ']', 'loaded:', loadedTo - loadedFrom + 1,
+            'loadedFr: ', loadedFrom, 'loadedTo: ', loadedTo);
+
+        const loadDown = () => {
+
+            //All is loaded
+            if (loadedTo >= items.length - 1) return;
+
+            if (isMaxExceeded())
+                freePart(loadedFrom, loadedFrom + partSize - 1);
+
+            createPart(loadedTo + 1, loadedTo + partSize);
+            log('DOWN');
+        };
+
+        const loadUp = () => {
+
+            //All is loaded
+            if (loadedFrom === 0) return;
+
+            if (isMaxExceeded())
+                freePart(loadedTo - partSize + 1, loadedTo);
+
+            //Save scroll position
+            const rootEl = zxBase.getHTML().children[1];
+            const curScrollPos = rootEl.scrollTop;
+            const oldScroll = rootEl.scrollHeight - rootEl.clientHeight;
+
+            createPart(loadedFrom - partSize, loadedFrom - 1, 0);
+
+            //Restore scroll position            
+            const newScroll = rootEl.scrollHeight - rootEl.clientHeight;
+            rootEl.scrollTop = curScrollPos + (newScroll - oldScroll);
+
+            log('UP');
         };
 
         zxBase.setInitHandler(() => {
@@ -72,39 +148,26 @@
             rElem.addEventListener('scroll', () => {
 
                 if (rElem.scrollTop + rElem.clientHeight > rElem.scrollHeight - deltaSize)
-                    load();
+                    loadDown();
+                else if (rElem.scrollTop <= deltaSize)
+                    loadUp();
             });
         });
 
         zxBase.setContent = (dt, fn) => {
 
             fillFn = fn;
-            data = dt;
+
+            dt.forEach(d => items.push(Object.seal({
+                data: d,
+                zxContr: null
+            })));
 
             sampleElem = zxBase.getAll()[0];
             sampleElem.hide();
 
-            load();
+            loadDown();
         };
-
-        /*        const items = [];
-
-                //TODO: Сейчас вызывается только один раз! Сделать возможность удаления старого контента
-                //Чтобы обновить инфу (без удаления старого), вызывающая функция должна заполмнить связку 
-                //data<->item, и при изменении data, обновлять соответсвующий item
-                zxBase.setContent = (dataArr, fillFn) => {
-
-                    const sample = zxBase.getAll()[0];
-                    sample.hide();
-
-                    const getItemFunc = (data, ind) => item => {
-
-                        items.push(item);
-                        fillFn(data, ind, item);
-                    };
-
-                    dataArr.forEach((elem, ind) => zxBase.copy(sample.getId(), getItemFunc(elem, ind)));
-                }; */
     </script>
 </head>
 

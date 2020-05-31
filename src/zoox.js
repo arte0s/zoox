@@ -2,7 +2,7 @@
 MIT License
 
 Copyright (c) 2020 Artem Shmidt
-https://arte0s.github.io
+https://arte0s.github.io/zoox/
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -330,7 +330,7 @@ const zoox = (() => {
 
                 if (!(cont.hideFn ? cont.hideFn() : false)) {
 
-                    console.log('hide:', cont.type.name, cont.id);
+                    // console.log('hide:', cont.type.name, cont.id);
                     cont.html.parentNode.removeChild(cont.html);
                     hideType(cont);
                     return true;
@@ -364,6 +364,28 @@ const zoox = (() => {
             const setInitHandler = (id, fn) => get(id).initFn = fn;
             const setHideHandlerControl = (id, fn) => get(id).hideFn = fn;
 
+            const free = id => {
+
+                getChildren(id).forEach(c => c.zxBase.free());
+
+                const contr = get(id);
+
+                if (!contr)
+                    throw new Error('Control with id "' + id + '" not found!');
+
+                //TODO: Надо удалять все дочерние контролы!
+
+                if (contr.visible === true)
+                    contr.zxBase.hide(); //Remove control from DOM
+
+                const i = data.findIndex(c => c.id === id);
+
+                if (i >= 0)
+                    data.splice(i, 1);
+
+                // console.log('[FREE] data.length:', data.length);
+            };
+
             //////////////////////////////////////////////////////////////
             return (id) => {
 
@@ -384,7 +406,8 @@ const zoox = (() => {
                     setDisplayHandler: fn => setDisplayHandlerControl(id, fn),
                     setHideHandler: fn => setHideHandlerControl(id, fn),
                     create: (rElem, fn, tName, cId) => builder.create(id, rElem, fn, tName, cId),
-                    copy: (sampleId, fn) => builder.copy(id, sampleId, fn)
+                    copy: (sampleId, fn, pos) => builder.copy(id, sampleId, fn, pos),
+                    free: () => free(id)
                 };
             }
         })();
@@ -456,10 +479,11 @@ const zoox = (() => {
                 zxBase: createBase(id),
                 texts: [],
                 nodes: [],
-                visible: false, //Зависит от корневого элемента
+                visible: pId || pId === null ? get(pId).visible : true, //Зависит от корневого элемента
             });
 
             data.push(c);
+            // console.log('[ADD] data.length:', data.length);
 
             if (type.onCreateFn) //Add custom functions
                 type.onCreateFn(c.zxBase);
@@ -908,16 +932,20 @@ const zoox = (() => {
         //-----------------------------------------------------------
         //  Остальные функции Builder-а
         //----------------------------------------------------------- 
-        const createRootElement = (rElem, tName, cId) => {
+        const createRootElement = (rElem, tName, cId, pos) => {
 
             const newElem = document.createElement(C.ZX.BLOCK);
             newElem.setAttribute("type", tName);
             newElem.setAttribute(C.ATTR.ID, cId);
-            rElem.appendChild(newElem);
+
+            if (pos || pos === 0)
+                rElem.insertBefore(newElem, rElem.children[pos]);
+            else
+                rElem.appendChild(newElem);
         };
 
         //////////////////////////////////////////////////////////////
-        const create = (rId, rElem, fn, tName, cId) => {
+        const create = (rId, rElem, fn, tName, cId, pos) => {
 
             const rContr = inst.get(rId);
 
@@ -927,7 +955,7 @@ const zoox = (() => {
 
             //TODO: Проверить уникальность localId в пределах родительского типа
 
-            createRootElement(rElem, tName, cId);
+            createRootElement(rElem, tName, cId, pos);
 
             createInst(rContr, fn, cId, tName);
         };
@@ -937,14 +965,12 @@ const zoox = (() => {
             createInst(rContr, fn, cId, null, true);
         };
 
-        const copy = (rId, sampleId, fn) => {
+        const copy = (rId, sampleId, fn, pos) => {
+
+            //TODO: Обработать позицию pos!
 
             const smp = inst.get(sampleId);
-            create(rId, smp.rootEl.parentElement, fn, smp.type.name);
-        };
-
-        const free = () => {
-            //TODO: Динамическое удаление контрола
+            create(rId, smp.rootEl.parentElement, fn, smp.type.name, null, pos);
         };
 
         const getPath = p => {
@@ -979,8 +1005,7 @@ const zoox = (() => {
             init,
             create,
             createLazy,
-            copy,
-            free
+            copy
         });
     })();
 
