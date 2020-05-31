@@ -74,6 +74,10 @@ const zoox = (() => {
             },
         });
 
+        const getGuid = () => ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, c =>
+            (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+        );
+
         const copy = (o, ff) => {
 
             let r = {};
@@ -91,6 +95,7 @@ const zoox = (() => {
             getId: e => e.getAttribute(C.ATTR.ID),
             setDebugMode: m => debugMode = m,
             toArray,
+            getGuid,
             checks,
             log
         });
@@ -337,7 +342,7 @@ const zoox = (() => {
                 };
             };
 
-            const setLazyHandler = (id, cId = null, fn) => {
+            const lazyInit = (id, cId = null, fn) => {
 
                 log();
 
@@ -373,8 +378,6 @@ const zoox = (() => {
                 if (!contr)
                     throw new Error('Control with id "' + id + '" not found!');
 
-                //TODO: Надо удалять все дочерние контролы!
-
                 if (contr.visible === true)
                     contr.zxBase.hide(); //Remove control from DOM
 
@@ -382,8 +385,6 @@ const zoox = (() => {
 
                 if (i >= 0)
                     data.splice(i, 1);
-
-                // console.log('[FREE] data.length:', data.length);
             };
 
             //////////////////////////////////////////////////////////////
@@ -401,7 +402,7 @@ const zoox = (() => {
                     getAll: ch => getChildren(id).map(c => c.zxBase),
                     setText: (textId, textObj) => textBuilder.create(id, textId, textObj),
                     refreshTexts: () => textBuilder.refresh(id),
-                    setLazyHandler: (ch, fn) => setLazyHandler(id, ch, fn),
+                    lazyInit: (ch, fn) => lazyInit(id, ch, fn),
                     setInitHandler: fn => setInitHandler(id, fn),
                     setDisplayHandler: fn => setDisplayHandlerControl(id, fn),
                     setHideHandler: fn => setHideHandlerControl(id, fn),
@@ -967,8 +968,6 @@ const zoox = (() => {
 
         const copy = (rId, sampleId, fn, pos) => {
 
-            //TODO: Обработать позицию pos!
-
             const smp = inst.get(sampleId);
             create(rId, smp.rootEl.parentElement, fn, smp.type.name, null, pos);
         };
@@ -1015,9 +1014,14 @@ const zoox = (() => {
     return Object.freeze({
         DEBUG: C.DEBUG,
         init: builder.init,
-        utils: Object.freeze({ toArray: utils.toArray }),
-        setLang: textBuilder.setLang,
-        getLangs: textBuilder.getLangs,
-        getLang: textBuilder.getLang
+        utils: Object.freeze({
+            toArray: utils.toArray,
+            getGuid: utils.getGuid,
+        }),
+        lang: Object.freeze({
+            set: textBuilder.setLang,
+            getAll: textBuilder.getLangs,
+            get: textBuilder.getLang
+        })
     });
 })();
